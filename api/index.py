@@ -140,6 +140,7 @@ def _quality(analysis: dict[str, Any] | None, *, mode: str) -> dict[str, Any]:
         }
     quality = analysis.get("quote_quality", {})
     inputs = analysis.get("inputs", {})
+    reason_codes = set(analysis.get("classification", {}).get("reason_codes", []))
     fq = inputs.get("futures_quote", {})
     kq = inputs.get("kalshi_yes_quote", {})
     return {
@@ -155,6 +156,7 @@ def _quality(analysis: dict[str, Any] | None, *, mode: str) -> dict[str, Any]:
         "executability": (
             "established"
             if quality.get("futures_mode") == quality.get("kalshi_mode") == "EXECUTABLE"
+            and "NON_EXECUTABLE_QUOTES" not in reason_codes
             else "not_established"
         ),
         "synchronization": (

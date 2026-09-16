@@ -34,6 +34,21 @@ def test_case_study_preserves_unavailable_evidence() -> None:
     assert body["analysis"]["classification"]["label"] == "NO_TRADE"
 
 
+def test_data_quality_executability_respects_model_hard_gate() -> None:
+    analysis = {
+        "inputs": {"futures_quote": {}, "kalshi_yes_quote": {}},
+        "quote_quality": {
+            "futures_mode": "EXECUTABLE",
+            "kalshi_mode": "EXECUTABLE",
+        },
+        "classification": {"reason_codes": ["NON_EXECUTABLE_QUOTES"]},
+    }
+
+    quality = api_module._quality(analysis, mode="manual")
+
+    assert quality["executability"] == "not_established"
+
+
 def test_live_unavailable_is_structured_degraded_result(monkeypatch) -> None:
     def unavailable(*_: object, **__: object) -> dict:
         raise ValueError("no open Kalshi market mapped to +25 bp")

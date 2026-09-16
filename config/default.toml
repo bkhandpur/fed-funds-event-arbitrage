@@ -1,5 +1,5 @@
 [providers]
-kalshi_base_url = "https://api.elections.kalshi.com/trade-api/v2"
+kalshi_base_url = "https://external-api.kalshi.com/trade-api/v2"
 yahoo_poll_seconds = 30
 http_timeout_seconds = 10
 max_retries = 3

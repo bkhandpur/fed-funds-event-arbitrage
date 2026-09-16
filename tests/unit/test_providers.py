@@ -7,14 +7,16 @@ import httpx
 import pandas as pd
 import pytest
 
+from fomc_basis.contracts import kalshi_top_of_book
 from fomc_basis.enums import ObservationKind
-from fomc_basis.models import Quote
+from fomc_basis.models import KalshiMarket, OrderBookLevel, Quote
 from fomc_basis.providers.csv_replay import CSVReplayProvider
 from fomc_basis.providers.federal_reserve import FederalReserveCalendarProvider
 from fomc_basis.providers.kalshi import KalshiPublicProvider
 from fomc_basis.providers.manual import ManualQuoteProvider
 from fomc_basis.providers.new_york_fed import NewYorkFedProvider
 from fomc_basis.providers.yahoo import YahooFinanceProvider
+from fomc_basis.services.market_mapping import map_outcome_markets
 
 
 def test_kalshi_provider_parses_cents_and_depth() -> None:
@@ -94,6 +96,29 @@ def test_kalshi_provider_follows_bounded_pagination() -> None:
     provider = KalshiPublicProvider("https://example.test")
     provider.client = httpx.Client(transport=httpx.MockTransport(handler))
     assert provider.discover()[0].ticker == "KXFED-25"
+
+
+def test_kalshi_top_of_book_normalizes_opposite_bid_without_inventing_depth() -> None:
+    market = KalshiMarket(
+        ticker="KXFED-25",
+        title="Fed raises rates exactly 25 bp",
+        yes_bids=[OrderBookLevel(price_dollars=Decimal("0.87"), quantity=10)],
+        no_bids=[OrderBookLevel(price_dollars=Decimal("0.12"), quantity=7)],
+    )
+    book = kalshi_top_of_book(market)
+    assert book["yes_ask"] == Decimal("0.88")
+    assert book["yes_ask_quantity"] == Decimal("7")
+    empty = kalshi_top_of_book(KalshiMarket(ticker="EMPTY", title="Empty"))
+    assert empty["yes_ask"] is None
+    assert empty["yes_ask_quantity"] is None
+
+
+def test_market_mapping_retains_semantic_ambiguity_flag() -> None:
+    first = KalshiMarket(ticker="A", title="25 bp", outcome_move_bp=25)
+    duplicate = KalshiMarket(ticker="B", title="25 bp duplicate", outcome_move_bp=25)
+    mapped, flags = map_outcome_markets([first, duplicate])
+    assert mapped[25].ticker == "A"
+    assert any(flag.value == "SETTLEMENT_DEFINITION_MISMATCH" for flag in flags)
 
 
 def test_new_york_fed_provider_parses_effr() -> None:

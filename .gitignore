@@ -22,3 +22,9 @@ build/
 reports/generated/
 .streamlit/secrets.toml
 .DS_Store
+.next/
+node_modules/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.vercel/

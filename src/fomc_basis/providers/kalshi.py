@@ -42,7 +42,7 @@ def semantic_move_bp(text: str) -> int | None:
 class KalshiPublicProvider(EventMarketProvider):
     def __init__(
         self,
-        base_url: str = "https://api.elections.kalshi.com/trade-api/v2",
+        base_url: str = "https://external-api.kalshi.com/trade-api/v2",
         timeout_seconds: float = 10,
         max_pages: int = 20,
     ):

@@ -1,0 +1,14 @@
+.deps/
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+data/
+dashboard/
+notebooks/
+scripts/
+test-results/
+tests/
+*.sqlite
+*.sqlite3
+*.tsbuildinfo

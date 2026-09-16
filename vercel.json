@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/api/health", "destination": "/api?__endpoint=health" },
+    { "source": "/api/meetings", "destination": "/api?__endpoint=meetings" },
+    { "source": "/api/case-study", "destination": "/api?__endpoint=case-study" },
+    { "source": "/api/live", "destination": "/api?__endpoint=live" },
+    { "source": "/api/analyze", "destination": "/api?__endpoint=analyze" }
+  ]
+}

@@ -9,7 +9,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -75,6 +75,40 @@ app = FastAPI(
 _cache_lock = Lock()
 _cache: dict[str, tuple[datetime, dict[str, Any]]] = {}
 _ttl = timedelta(seconds=45)
+
+
+@app.api_route("/api", methods=["GET", "POST"], include_in_schema=False)
+async def vercel_entry(request: Request) -> Any:
+    """Dispatch Vercel rewrites through the Python function's concrete /api route."""
+    endpoint = request.query_params.get("__endpoint")
+    try:
+        if endpoint == "health":
+            return health()
+        if endpoint == "meetings":
+            return meetings(int(request.query_params["year"]))
+        if endpoint == "case-study":
+            return case_study()
+        if endpoint == "live":
+            return live(
+                date.fromisoformat(request.query_params["meeting"]),
+                int(request.query_params.get("outcome_bp", 25)),
+                int(request.query_params.get("contracts", 500)),
+            )
+        if endpoint == "analyze" and request.method == "POST":
+            return analyze(ManualAnalysisRequest.model_validate(await request.json()))
+    except (KeyError, ValueError, ValidationError) as exc:
+        return JSONResponse(
+            status_code=422,
+            content=ErrorResponse(
+                error=ErrorDetail(code="VALIDATION_ERROR", message=str(exc))
+            ).model_dump(mode="json"),
+        )
+    return JSONResponse(
+        status_code=404,
+        content=ErrorResponse(
+            error=ErrorDetail(code="NOT_FOUND", message="Unknown API endpoint")
+        ).model_dump(mode="json"),
+    )
 
 
 def _quality(analysis: dict[str, Any] | None, *, mode: str) -> dict[str, Any]:

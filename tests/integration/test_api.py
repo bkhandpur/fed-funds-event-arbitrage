@@ -16,6 +16,12 @@ def test_health_schema_and_serialization() -> None:
     assert body["timestamp"].endswith("Z")
 
 
+def test_vercel_rewrite_dispatcher_preserves_public_health_contract() -> None:
+    response = client.get("/api?__endpoint=health")
+    assert response.status_code == 200
+    assert response.json()["python_model"] == "fomc_basis"
+
+
 def test_case_study_preserves_unavailable_evidence() -> None:
     response = client.get("/api/case-study")
     assert response.status_code == 200

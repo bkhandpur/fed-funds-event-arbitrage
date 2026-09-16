@@ -1,0 +1,20 @@
+{
+  "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+  "meeting_start_date": "2026-09-15",
+  "decision_date": "2026-09-16",
+  "effective_date": "2026-09-17",
+  "futures_ticker": "ZQU26",
+  "yahoo_symbol": "ZQU26.CBT",
+  "futures_bid": 96.2600,
+  "futures_ask": 96.2625,
+  "kalshi_exact_25_yes_bid": 0.87,
+  "kalshi_exact_25_yes_ask": 0.88,
+  "effr_pct": 3.63,
+  "days_in_month": 30,
+  "pre_decision_days": 16,
+  "post_decision_days": 14,
+  "displayed_greater_than_25_probability_context_only": 0.02,
+  "synchronized": false,
+  "executable": false,
+  "warning": "User-supplied fixture; not necessarily synchronized or executable."
+}

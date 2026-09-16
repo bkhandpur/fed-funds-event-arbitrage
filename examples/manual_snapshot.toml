@@ -1,0 +1,20 @@
+[meeting]
+start_date = "2026-09-15"
+decision_date = "2026-09-16"
+effective_date = "2026-09-17"
+
+[effr]
+effr_pct = 3.63
+
+[futures]
+symbol = "ZQU26.CBT"
+bid = 96.2600
+ask = 96.2625
+source = "historical_user_supplied_fixture"
+executable = false
+synchronized = false
+
+[kalshi_exact_25]
+yes_bid = 0.87
+yes_ask = 0.88
+depth = 0

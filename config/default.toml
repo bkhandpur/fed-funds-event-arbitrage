@@ -1,0 +1,46 @@
+[providers]
+kalshi_base_url = "https://api.elections.kalshi.com/trade-api/v2"
+yahoo_poll_seconds = 30
+http_timeout_seconds = 10
+max_retries = 3
+
+[quality]
+stale_warning_seconds = 60
+stale_hard_seconds = 300
+sync_hard_seconds = 60
+minimum_futures_precision = 0.0025
+
+[model]
+state_grid_bp = [-50, -25, 0, 25, 50, 75]
+prior = [0.01, 0.04, 0.45, 0.43, 0.05, 0.02]
+basis_scenarios_bp = [0, -1, 1, -2, 2]
+ev_hurdle_dollars = 0.01
+probability_tolerance = 1e-8
+arbitrage_tolerance_dollars = 1e-8
+
+[model.tail_bounds]
+"-50" = [0.0, 0.01]
+"-25" = [0.0, 0.02]
+"50" = [0.0, 0.02]
+"75" = [0.0, 0.01]
+
+[costs]
+kalshi_taker_fee_coefficient = 0.07
+kalshi_maker_fee_coefficient = 0.0
+kalshi_settlement_fee_per_contract_dollars = 0.0
+kalshi_schedule_name = "configurable-standard"
+kalshi_schedule_effective_date = "2026-01-01"
+futures_entry_commission_dollars = 1.50
+futures_exchange_fee_dollars = 1.50
+futures_nfa_fee_dollars = 0.02
+futures_exit_cost_dollars = 3.02
+futures_margin_per_contract_dollars = 2000.0
+slippage_per_kalshi_contract_dollars = 0.0
+
+[limits]
+capital_dollars = 10000.0
+max_kalshi_contracts = 1000
+max_futures_contracts = 10
+
+[storage]
+sqlite_path = "data/fomc_basis.sqlite3"

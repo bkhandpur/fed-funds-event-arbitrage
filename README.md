@@ -6,13 +6,13 @@ An execution-aware research monitor that tests whether a probability gap between
 
 ![FOMC Basis Monitor showing a NO TRADE decision and its blocking conditions](public/dashboard-preview.png)
 
-The monitor never places orders. A positive expected value is not labeled arbitrage unless the supplied evidence establishes executable, fresh, synchronized and sufficiently deep quotes; compatible settlement; nonnegative payoff across every modeled and basis-stress state; and valid capital and position limits.
+A positive expected value is not labeled arbitrage unless the supplied evidence establishes executable, fresh, synchronized and sufficiently deep quotes; compatible settlement; nonnegative payoff across every modeled and basis-stress state; and valid capital and position limits.
 
 ## Research question
 
 Kalshi contracts settle on a specific target-rate outcome. A ZQ futures contract settles to the arithmetic average of daily effective federal funds rates across an entire calendar month. A displayed Kalshi probability and a number derived directly from `100 − ZQ price` therefore measure different things.
 
-The model asks a narrower question: after removing the known pre-meeting portion of the monthly average and accounting for identification, execution, fees, basis risk and integer hedge sizing, is there a trade supported by the evidence?
+The model asks a narrower question. After removing the known pre-meeting portion of the monthly average and accounting for identification, execution, fees, basis risk and integer hedge sizing, is there a trade supported by the evidence?
 
 ## Architecture
 
@@ -47,7 +47,7 @@ The existing Python package is the only analytical implementation. The web clien
 | ZQ indication | Yahoo Finance via `yfinance` | Potentially delayed and not exchange-direct; last/previous close is never promoted to bid/ask |
 | Historical fixture | User-supplied observation | Non-synchronized and non-executable unless evidence says otherwise |
 
-Kalshi uses the current recommended production base URL, `https://external-api.kalshi.com/trade-api/v2`. The application has no authenticated account, portfolio or order endpoints.
+Kalshi uses the current recommended production base URL, `https://external-api.kalshi.com/trade-api/v2`.
 
 ## Methodology
 
@@ -140,8 +140,6 @@ If the Python function eventually exceeds Vercel's bundle constraints, the suppo
 - Kalshi outcome mapping uses conservative semantic parsing and can return no match.
 - Multiple meetings in one ZQ month can underidentify a naive single-meeting decomposition.
 - Local SQLite history is not durable production storage on Vercel.
-
-This project is a research monitor, not investment advice, a brokerage interface or an execution system.
 
 ## License
 

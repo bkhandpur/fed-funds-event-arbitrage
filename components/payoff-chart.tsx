@@ -3,7 +3,11 @@
 import type { PayoffRow } from "@/lib/types";
 
 const money = (value: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(value);
 
 export function PayoffChart({ rows, label = "Net P&L" }: { rows: PayoffRow[]; label?: string }) {
   if (!rows.length) return <p className="empty-copy">No state-payoff rows are available.</p>;
@@ -26,7 +30,10 @@ export function PayoffChart({ rows, label = "Net P&L" }: { rows: PayoffRow[]; la
           >
             <span className="bar-value">{money(value)}</span>
             <span className={`bar ${value >= 0 ? "positive" : "negative"}`} style={{ height }} />
-            <span className="bar-label">{state >= 0 ? "+" : ""}{state} bp</span>
+            <span className="bar-label">
+              {state >= 0 ? "+" : ""}
+              {state} bp
+            </span>
           </button>
         );
       })}

@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "format": "prettier --write app components lib tests/frontend tests/e2e *.ts *.mjs README.md .github",
+    "format:check": "prettier --check app components lib tests/frontend tests/e2e *.ts *.mjs README.md .github"
   },
   "dependencies": {
     "@vercel/analytics": "^1.5.0",
@@ -26,12 +28,13 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.0.0",
-    "jsdom": "^27.0.0",
-    "typescript": "^5.9.0",
-    "vitest": "^5.0.3",
-    "typescript-eslint": "^8.71.1",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-jsx-a11y": "^6.10.2"
+    "jsdom": "^27.0.0",
+    "prettier": "^3.9.9",
+    "typescript": "^5.9.0",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
   },
   "type": "module",
   "engines": {

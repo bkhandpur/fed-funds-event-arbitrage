@@ -1,9 +1,13 @@
 import type { Envelope, NormalizedAnalysis, PayoffRow } from "./types";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-const asNumber = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
-const asStrings = (value: unknown): string[] => (Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : []);
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+const asNumber = (value: unknown): number | null =>
+  typeof value === "number" && Number.isFinite(value) ? value : null;
+const asStrings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 
 export function normalizeEnvelope(envelope: Envelope): NormalizedAnalysis | null {
   if (!envelope.analysis) return null;
@@ -19,20 +23,31 @@ export function normalizeEnvelope(envelope: Envelope): NormalizedAnalysis | null
   const fixtureOrder = asRecord(fixtureEv.yes_order_dollars === undefined ? {} : fixtureEv);
   const rows = (Array.isArray(a.state_payoffs) ? a.state_payoffs : []) as PayoffRow[];
   const pnls = rows.map((row) => row.combined_net_pnl_dollars).filter(Number.isFinite);
-  const payoffCapital = rows.map((row) => row.capital_required_dollars).filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+  const payoffCapital = rows
+    .map((row) => row.capital_required_dollars)
+    .filter((value): value is number => typeof value === "number" && Number.isFinite(value));
   const historical = envelope.mode === "case-study";
-  const fee = historical ? asNumber(asRecord(a.fees).total_dollars) : asNumber(chosenEv.fee_total_dollars);
+  const fee = historical
+    ? asNumber(asRecord(a.fees).total_dollars)
+    : asNumber(chosenEv.fee_total_dollars);
   const classificationEv = asNumber(classification.expected_value_dollars);
-  const chosenPrice = historical ? asNumber(inputs.kalshi_yes_ask) : asNumber(chosenEv.price_dollars);
+  const chosenPrice = historical
+    ? asNumber(inputs.kalshi_yes_ask)
+    : asNumber(chosenEv.price_dollars);
   const contracts = historical ? 500 : asNumber(inputs.kalshi_contracts);
-  const futuresContracts = historical ? asNumber(asRecord(hedge.nearest).futures_contracts) : asNumber(hedge.nearest_futures_contracts);
+  const futuresContracts = historical
+    ? asNumber(asRecord(hedge.nearest).futures_contracts)
+    : asNumber(hedge.nearest_futures_contracts);
   return {
     classification: typeof classification.label === "string" ? classification.label : "NO_TRADE",
     reasons: asStrings(classification.reason_codes),
     riskFlags: asStrings(classification.risk_flags),
     expectedValue: classificationEv ?? asNumber(fixtureOrder.yes_order_dollars),
     worstPnl: asNumber(classification.worst_case_pnl_dollars),
-    capitalRequired: asNumber(limits.capital_required_dollars) ?? asNumber(chosenEv.estimated_total_capital_dollars) ?? (payoffCapital.length ? Math.max(...payoffCapital) : null),
+    capitalRequired:
+      asNumber(limits.capital_required_dollars) ??
+      asNumber(chosenEv.estimated_total_capital_dollars) ??
+      (payoffCapital.length ? Math.max(...payoffCapital) : null),
     analysisTimestamp: typeof a.analysis_timestamp === "string" ? a.analysis_timestamp : null,
     syncStatus: String(envelope.data_quality.synchronization ?? "not_established"),
     executableStatus: String(envelope.data_quality.executability ?? "not_established"),
@@ -40,13 +55,30 @@ export function normalizeEnvelope(envelope: Envelope): NormalizedAnalysis | null
     kalshiPrice: chosenPrice,
     kalshiContracts: contracts,
     futuresContracts,
-    futuresDirection: futuresContracts === null ? null : futuresContracts > 0 ? "Long ZQ" : futuresContracts < 0 ? "Short ZQ" : "No hedge",
+    futuresDirection:
+      futuresContracts === null
+        ? null
+        : futuresContracts > 0
+          ? "Long ZQ"
+          : futuresContracts < 0
+            ? "Short ZQ"
+            : "No hedge",
     fees: fee,
-    margin: futuresContracts === null ? null : Math.abs(futuresContracts) * (asNumber(inputs.futures_margin_per_contract_dollars) ?? 2000),
+    margin:
+      futuresContracts === null
+        ? null
+        : Math.abs(futuresContracts) *
+          (asNumber(inputs.futures_margin_per_contract_dollars) ?? 2000),
     bestPnl: pnls.length ? Math.max(...pnls) : null,
-    breakEven: historical ? asNumber(fixtureEv.break_even_probability) : asNumber(chosenEv.break_even_probability),
+    breakEven: historical
+      ? asNumber(fixtureEv.break_even_probability)
+      : asNumber(chosenEv.break_even_probability),
     maxPrice: historical ? null : asNumber(chosenEv.break_even_price_dollars),
-    hurdlePrices: historical ? {} : Object.fromEntries(Object.entries(asRecord(chosenEv.ev_hurdle_prices)).map(([k, v]) => [k, asNumber(v)])),
+    hurdlePrices: historical
+      ? {}
+      : Object.fromEntries(
+          Object.entries(asRecord(chosenEv.ev_hurdle_prices)).map(([k, v]) => [k, asNumber(v)]),
+        ),
     dayCount: asRecord(a.day_count),
     probability: asRecord(a.probability_model),
     inputs,
@@ -76,5 +108,11 @@ export const reasonCopy: Record<string, string> = {
 };
 
 export function reasonText(code: string): string {
-  return reasonCopy[code] ?? code.replaceAll("_", " ").toLowerCase().replace(/^./, (c) => c.toUpperCase()) + ".";
+  return (
+    reasonCopy[code] ??
+    code
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/^./, (c) => c.toUpperCase()) + "."
+  );
 }

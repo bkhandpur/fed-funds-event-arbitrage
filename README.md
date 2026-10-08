@@ -39,13 +39,13 @@ The existing Python package is the only analytical implementation. The web clien
 
 ## Data sources
 
-| Input | Source | Production treatment |
-|---|---|---|
-| FOMC meeting dates | Board of Governors of the Federal Reserve System | Official schedule; parser failures return a degraded response |
-| EFFR and target context | Federal Reserve Bank of New York | Reference rate and target-range context |
-| Event definitions and order books | Kalshi public Trade API | Unauthenticated public endpoints; asks are derived only from opposite-side bids |
-| ZQ indication | Yahoo Finance via `yfinance` | Potentially delayed and not exchange-direct; last/previous close is never promoted to bid/ask |
-| Historical fixture | User-supplied observation | Non-synchronized and non-executable unless evidence says otherwise |
+| Input                             | Source                                           | Production treatment                                                                          |
+| --------------------------------- | ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| FOMC meeting dates                | Board of Governors of the Federal Reserve System | Official schedule; parser failures return a degraded response                                 |
+| EFFR and target context           | Federal Reserve Bank of New York                 | Reference rate and target-range context                                                       |
+| Event definitions and order books | Kalshi public Trade API                          | Unauthenticated public endpoints; asks are derived only from opposite-side bids               |
+| ZQ indication                     | Yahoo Finance via `yfinance`                     | Potentially delayed and not exchange-direct; last/previous close is never promoted to bid/ask |
+| Historical fixture                | User-supplied observation                        | Non-synchronized and non-executable unless evidence says otherwise                            |
 
 Kalshi uses the current recommended production base URL, `https://external-api.kalshi.com/trade-api/v2`.
 
@@ -61,12 +61,12 @@ The model solves for the futures-implied post-meeting EFFR, then expresses the e
 
 State payoffs incorporate Kalshi fees, futures costs, margin, integer hedge sizing and EFFR/target basis stress. Classification remains deliberately conservative:
 
-| Classification | Meaning |
-|---|---|
-| `TRUE_ARBITRAGE` | Every execution and evidence gate passes; every modeled and basis-stress state is nonnegative, with at least one positive state |
-| `NEAR_ARBITRAGE_WITH_SMALL_BASIS_RISK` | Modeled state payoffs survive, with limited residual basis risk |
-| `RELATIVE_VALUE_TRADE` | Expected value clears the hurdle, but at least one modeled state loses money |
-| `NO_TRADE` | At least one evidence, execution, limit or payoff gate fails |
+| Classification                         | Meaning                                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `TRUE_ARBITRAGE`                       | Every execution and evidence gate passes; every modeled and basis-stress state is nonnegative, with at least one positive state |
+| `NEAR_ARBITRAGE_WITH_SMALL_BASIS_RISK` | Modeled state payoffs survive, with limited residual basis risk                                                                 |
+| `RELATIVE_VALUE_TRADE`                 | Expected value clears the hurdle, but at least one modeled state loses money                                                    |
+| `NO_TRADE`                             | At least one evidence, execution, limit or payoff gate fails                                                                    |
 
 The integer optimizer in `math/arbitrage.py` maximizes minimum **net** state payoff.
 Entry cashflow is included in each state constraint. Short-sale credits require an

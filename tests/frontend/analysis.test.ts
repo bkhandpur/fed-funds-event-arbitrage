@@ -3,7 +3,9 @@ import { reasonText, reasonCopy } from "../../lib/analysis";
 
 describe("classification reason rendering", () => {
   it("renders every hard gate as specific professional copy", () => {
-    expect(reasonText("NON_EXECUTABLE_QUOTES")).toBe("Futures quote is indicative rather than executable.");
+    expect(reasonText("NON_EXECUTABLE_QUOTES")).toBe(
+      "Futures quote is indicative rather than executable.",
+    );
     expect(reasonText("UNSYNCHRONIZED_QUOTES")).toContain("synchronization window");
     expect(reasonText("SETTLEMENT_MISMATCH")).toContain("Settlement definitions");
     expect(reasonText("INSUFFICIENT_DEPTH")).toContain("depth");

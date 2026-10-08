@@ -137,7 +137,9 @@ def test_new_york_fed_provider_parses_effr() -> None:
 
 def test_federal_reserve_cached_calendar(tmp_path) -> None:
     cache = tmp_path / "calendar.html"
-    cache.write_text("<div>September 15-16, 2026</div><div>October 27–28, 2026</div>")
+    cache.write_text(
+        "<h4>2026 FOMC Meetings</h4><div>September 15-16, 2026</div><div>October 27–28, 2026</div>"
+    )
     meetings = FederalReserveCalendarProvider(cache).meetings(2026)
     assert [meeting.decision_date for meeting in meetings] == [
         date(2026, 9, 16),
@@ -298,3 +300,19 @@ def test_manual_provider_returns_defensive_copy_and_clear_missing_error() -> Non
     assert provider.quote(2027, 1) == original
     with pytest.raises(LookupError, match="no manual quote"):
         provider.quote(2027, 2)
+
+
+def test_federal_reserve_missing_year_never_relabels_another_calendar(tmp_path) -> None:
+    cache = tmp_path / "calendar.html"
+    cache.write_text("<h4>2026 FOMC Meetings</h4><div>December 8-9</div>")
+    with pytest.raises(LookupError, match="2027"):
+        FederalReserveCalendarProvider(cache).meetings(2027)
+
+
+def test_federal_reserve_cross_year_meeting(tmp_path) -> None:
+    cache = tmp_path / "calendar.html"
+    cache.write_text("<h4>2026 FOMC Meetings</h4><div>Dec/Jan 31-1</div>")
+    meeting = FederalReserveCalendarProvider(cache).meetings(2026)[0]
+    assert meeting.start_date == date(2026, 12, 31)
+    assert meeting.decision_date == date(2027, 1, 1)
+    assert meeting.effective_date == date(2027, 1, 2)

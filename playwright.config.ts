@@ -22,7 +22,7 @@ export default defineConfig({
           reuseExistingServer: false,
         },
         {
-          command: "PYTHON_API_ORIGIN=http://127.0.0.1:8107 npm run dev -- --port 3107",
+          command: "PYTHON_API_ORIGIN=http://127.0.0.1:8107 npm run start -- --port 3107",
           url: "http://127.0.0.1:3107",
           reuseExistingServer: false,
         },

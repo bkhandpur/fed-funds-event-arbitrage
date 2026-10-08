@@ -157,3 +157,61 @@ def test_warning_age_alone_does_not_apply_hard_no_trade_gate() -> None:
         basis_stress_pnl_dollars=[0, 0.5],
     )
     assert result.label == TradeClassification.TRUE_ARBITRAGE
+
+
+def test_certain_loss_prefers_cash() -> None:
+    result = maximize_worst_case([Instrument("loss", 10, (5, 5), 1)], 10)
+    assert result.quantities == {}
+    assert result.worst_case_dollars == 0
+
+
+@pytest.mark.parametrize("capital", [0, 2, 4, 8])
+def test_optimizer_matches_exhaustive_net_portfolios(capital: int) -> None:
+    from itertools import product
+
+    instruments = [Instrument("a", 2, (5, 0), 3), Instrument("b", 1, (0, 3), 3)]
+    expected = max(
+        min(3 * a - b, -2 * a + 2 * b)
+        for a, b in product(range(4), repeat=2)
+        if 2 * a + b <= capital
+    )
+    solution = maximize_worst_case(instruments, capital)
+    assert solution.worst_case_dollars == pytest.approx(expected)
+
+
+def test_short_credit_uses_explicit_collateral_and_net_cashflows() -> None:
+    short = Instrument("short", -4, (-2, -3), 5, capital_required_dollars=10)
+    result = maximize_worst_case([short], 20)
+    assert result.quantities == {"short": 2}
+    assert result.state_net_payoffs_dollars == pytest.approx((4, 2))
+
+
+@pytest.mark.parametrize(
+    "instrument",
+    [
+        Instrument("empty", 1, (), 1),
+        Instrument("nan", float("nan"), (2,), 1),
+        Instrument("infinite", 1, (float("inf"),), 1),
+        Instrument("fraction", 1, (2,), 1.5),
+        Instrument("short", -1, (-2,), 1),
+    ],
+)
+def test_invalid_optimizer_inputs(instrument: Instrument) -> None:
+    with pytest.raises(ValueError):
+        maximize_worst_case([instrument], 10)
+
+
+def test_fractional_sizing_blocks_other_classifications() -> None:
+    for payoff in ([0, 1], [-1, 2]):
+        result = classify(
+            payoff,
+            0.5,
+            set(),
+            executable=True,
+            all_outcomes_modeled=True,
+            settlement_compatible=True,
+            depth_sufficient=True,
+            integer_sizing=False,
+            basis_stress_pnl_dollars=payoff,
+        )
+        assert result.label == TradeClassification.NO_TRADE

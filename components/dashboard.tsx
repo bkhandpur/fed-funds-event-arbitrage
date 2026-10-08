@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState, useRef } from "react";
 import { normalizeEnvelope, reasonText } from "@/lib/analysis";
 import type { Envelope, Mode, NormalizedAnalysis } from "@/lib/types";
 import { PayoffChart } from "./payoff-chart";
@@ -57,8 +57,14 @@ function Decision({ analysis, mode }: { analysis: NormalizedAnalysis; mode: Mode
 
 function ManualForm({ onResult, setLoading }: { onResult: (value: Envelope) => void; setLoading: (value: boolean) => void }) {
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const request = useRef<AbortController | null>(null);
+  useEffect(() => () => request.current?.abort(), []);
   async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setError(null); setLoading(true);
+    event.preventDefault();
+    request.current?.abort();
+    const controller = new AbortController(); request.current = controller;
+    setError(null); setLoading(true); setBusy(true);
     const f = new FormData(event.currentTarget);
     const s = (name: string) => String(f.get(name) ?? "").trim();
     const n = (name: string) => s(name) === "" ? null : Number(s(name));
@@ -83,13 +89,14 @@ function ManualForm({ onResult, setLoading }: { onResult: (value: Envelope) => v
           current_effr_target_basis_bp: n("current_basis"), assumed_post_meeting_basis_bp: n("assumed_basis")
         }
       };
-      const result = await fetchEnvelope("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      const result = await fetchEnvelope("/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: controller.signal });
+      if (controller.signal.aborted) return;
       onResult(result); if (!result.ok) setError(result.error?.message ?? "Analysis unavailable");
-    } catch (err) { setError(err instanceof Error ? err.message : "Analysis failed"); } finally { setLoading(false); }
+    } catch (err) { if (!controller.signal.aborted) setError(err instanceof Error ? err.message : "Analysis failed"); } finally { if (!controller.signal.aborted) { setLoading(false); setBusy(false); } }
   }
   return (
-    <form className="manual-form" onSubmit={submit} aria-label="Manual scenario inputs">
-      <div className="form-header"><div><h2>Manual scenario</h2><p>Supply observed evidence. Blank quote or depth fields remain unavailable.</p></div><button className="primary" type="submit">Run Python model</button></div>
+    <form className="manual-form" onSubmit={submit} aria-label="Manual scenario inputs" onChange={() => { request.current?.abort(); setBusy(false); setLoading(false); }}>
+      <div className="form-header"><div><h2>Manual scenario</h2><p>Supply observed evidence. Blank quote or depth fields remain unavailable.</p></div><button className="primary" type="submit" disabled={busy}>Run scenario</button></div>
       <fieldset><legend>Contract and timing</legend><label>FOMC decision date<input name="decision_date" type="date" defaultValue="2026-09-16" required /></label><label>Effective date<input name="effective_date" type="date" defaultValue="2026-09-17" required /></label><label>Current EFFR (%)<input name="effr" type="number" step="0.001" defaultValue="3.63" required /></label><label>ZQ contract<input name="zq_contract" defaultValue="ZQU26.CBT" required /></label><label>Kalshi ticker<input name="kalshi_ticker" defaultValue="KXFED-26SEP-T3.75" required /></label><label>Modeled outcome (bp)<input name="outcome_bp" type="number" step="25" defaultValue="25" required /></label></fieldset>
       <fieldset><legend>Observed quotes</legend><label>Futures bid<input name="futures_bid" type="number" step="0.0001" defaultValue="96.2600" /></label><label>Futures ask<input name="futures_ask" type="number" step="0.0001" defaultValue="96.2625" /></label><label>Futures last<input name="futures_last" type="number" step="0.0001" /></label><label>Futures source time<input name="futures_timestamp" type="datetime-local" /></label><label>YES bid ($)<input name="yes_bid" type="number" min="0" max="1" step="0.01" defaultValue="0.87" /></label><label>YES ask ($)<input name="yes_ask" type="number" min="0" max="1" step="0.01" defaultValue="0.88" /></label><label>Kalshi source time<input name="kalshi_timestamp" type="datetime-local" /></label><label>YES ask depth<input name="yes_depth" type="number" min="0" /></label><label>NO ask depth<input name="no_depth" type="number" min="0" /></label></fieldset>
       <fieldset><legend>Costs and limits</legend><label>Contract count<input name="contracts" type="number" min="1" defaultValue="500" required /></label><label>Capital limit ($)<input name="capital" type="number" min="1" defaultValue="10000" required /></label><label>Futures round-trip cost ($)<input name="futures_cost" type="number" min="0" step="0.01" defaultValue="6.04" required /></label><label>Futures margin / contract ($)<input name="margin" type="number" min="0" defaultValue="2000" required /></label><label>Kalshi fee coefficient<input name="kalshi_fee" type="number" min="0" step="0.001" defaultValue="0.07" required /></label><label>Slippage / Kalshi contract ($)<input name="slippage" type="number" min="0" step="0.001" defaultValue="0" required /></label></fieldset>
@@ -104,16 +111,39 @@ export function Dashboard() {
   const [tab, setTab] = useState<Tab>("Overview");
   const [envelope, setEnvelope] = useState<Envelope | null>(null);
   const [loading, setLoading] = useState(true);
-  const [meeting, setMeeting] = useState("2026-09-16");
+  const [meeting, setMeeting] = useState("");
+  const [calendarError, setCalendarError] = useState("");
   const [outcome, setOutcome] = useState(25);
   const [contracts, setContracts] = useState(500);
 
   useEffect(() => {
-    if (mode === "manual") return;
-    let active = true;
+    const controller = new AbortController();
+    async function loadMeeting() {
+      const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+      const year = Number(today.slice(0, 4));
+      for (const y of [year, year + 1]) {
+        const response = await fetch(`/api/meetings?year=${y}`, { signal: controller.signal });
+        const data = await response.json();
+        if (!response.ok || !data.ok) throw new Error("Official calendar unavailable. Select a meeting manually or use the historical case study.");
+        const upcoming = data.meetings.map((m: { decision_date: string }) => m.decision_date).filter((d: string) => d > today).sort()[0];
+        if (upcoming) { setMeeting(upcoming); return; }
+      }
+      throw new Error("No upcoming scheduled meeting is available. Use a manual scenario.");
+    }
+    loadMeeting().catch((err) => { if (!controller.signal.aborted) setCalendarError(err.message); });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (mode === "manual" || (mode === "live" && !meeting)) return;
+    const controller = new AbortController();
     const url = mode === "case-study" ? "/api/case-study" : `/api/live?meeting=${meeting}&outcome_bp=${outcome}&contracts=${contracts}`;
-    fetchEnvelope(url).then((value) => { if (active) setEnvelope(value); }).catch((error: Error) => { if (active) setEnvelope({ ok: false, mode, status: "unavailable", analysis: null, data_quality: {}, provenance: [], error: { code: "REQUEST_FAILED", message: error.message } }); }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    fetchEnvelope(url, { signal: controller.signal }).then((value) => {
+      if (!controller.signal.aborted) setEnvelope(value);
+    }).catch((error: Error) => {
+      if (!controller.signal.aborted) setEnvelope({ ok: false, mode, status: "unavailable", analysis: null, data_quality: {}, provenance: [], error: { code: "REQUEST_FAILED", message: error.message } });
+    }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [mode, meeting, outcome, contracts]);
 
   const analysis = useMemo(() => envelope ? normalizeEnvelope(envelope) : null, [envelope]);
@@ -126,14 +156,15 @@ export function Dashboard() {
   return (
     <main>
       <header className="site-header"><a className="brand" href="#top">FOMC / BASIS</a><div className="header-meta"><span>Cross-market research monitor</span><a href="https://github.com/bkhandpur/fed-funds-event-arbitrage">Source</a></div></header>
-      <div id="top" className="intro"><div><p className="eyebrow">Kalshi × 30-Day Fed Funds futures</p><h2>Is the probability gap a trade—or a measurement problem?</h2><p>Normalize the monthly-average futures contract, price both legs, and test every execution gate. The Python model remains the analytical source of truth.</p></div><div className="research-note"><span>Research monitor</span><strong>No order placement</strong><p>Public and user-supplied data only.</p></div></div>
-      <section className="controls" aria-label="Analysis controls"><div className="segmented" role="group" aria-label="Data mode">{(["live", "case-study", "manual"] as Mode[]).map((item) => <button key={item} className={mode === item ? "active" : ""} onClick={() => { setMode(item); if (item === "manual") { setEnvelope(null); setLoading(false); } else if (item !== mode) { setLoading(true); } }}>{item === "live" ? "Live public data" : item === "case-study" ? "Historical case study" : "Manual scenario"}</button>)}</div>{mode === "live" && <div className="live-controls"><label>Meeting<input type="date" value={meeting} onChange={(e) => { setMeeting(e.target.value); setLoading(true); }} /></label><label>Outcome (bp)<input type="number" step="25" value={outcome} onChange={(e) => { setOutcome(Number(e.target.value)); setLoading(true); }} /></label><label>Contracts<input type="number" min="1" value={contracts} onChange={(e) => { setContracts(Number(e.target.value)); setLoading(true); }} /></label></div>}</section>
-      {mode === "live" && <div className="source-warning"><strong>Live means recently retrieved public data—not guaranteed executable data.</strong> Yahoo is indicative and potentially delayed; its last price is not a CME bid or ask. Kalshi and Yahoo observations may not be synchronized. True arbitrage is impossible while any hard execution gate fails.</div>}
-      {mode === "manual" && !analysis && <ManualForm onResult={setEnvelope} setLoading={setLoading} />}
-      {loading && <div className="loading" role="status">Running evidence checks…</div>}
+      <div id="top" className="intro"><div><p className="eyebrow">Kalshi × 30-Day Fed Funds futures</p><h2>Compare policy scenarios across markets</h2><p>Normalize the monthly-average futures contract, price both legs, and test every execution gate. Inspect expected value, downside and the evidence needed to trade.</p></div><div className="research-note"><span>Research monitor</span><strong>No order placement</strong><p>Public and user-supplied data only.</p></div></div>
+      <section className="controls" aria-label="Analysis controls"><div className="segmented" role="group" aria-label="Data mode">{(["live", "case-study", "manual"] as Mode[]).map((item) => <button key={item} className={mode === item ? "active" : ""} onClick={() => { if (item === mode) return; setMode(item); setEnvelope(null); if (item === "manual") { setEnvelope(null); setLoading(false); } else if (item !== mode) { setLoading(true); } }}>{item === "live" ? "Live public data" : item === "case-study" ? "Historical case study" : "Manual scenario"}</button>)}</div>{mode === "live" && <div className="live-controls"><label>Meeting<input type="date" value={meeting} onChange={(e) => { setMeeting(e.target.value); setEnvelope(null); setLoading(Boolean(e.target.value)); }} /></label><label>Outcome (bp)<input type="number" step="25" value={outcome} onChange={(e) => { setOutcome(Number(e.target.value)); setEnvelope(null); setLoading(true); }} /></label><label>Contracts<input type="number" min="1" value={contracts} onChange={(e) => { setContracts(Number(e.target.value)); setEnvelope(null); setLoading(true); }} /></label></div>}</section>
+      {mode === "live" && calendarError && <p role="status">{calendarError}</p>}
+      {mode === "live" && <div className="source-warning"><strong>Live means recently retrieved public data. Executability requires additional evidence.</strong> Yahoo is indicative and potentially delayed; its last price is not a CME bid or ask. Kalshi and Yahoo observations may not be synchronized. True arbitrage is impossible while any hard execution gate fails.</div>}
+      {mode === "manual" && <div hidden={Boolean(analysis)}><ManualForm onResult={setEnvelope} setLoading={setLoading} /></div>}
+      {loading && !(mode === "live" && !meeting && calendarError) && <div className="loading" role="status">Running evidence checks…</div>}
       {!loading && envelope && !envelope.ok && !analysis && <section className="empty-state"><p className="eyebrow">{envelope.error?.code ?? "DATA UNAVAILABLE"}</p><h1>No analysis is available for this selection.</h1><p>{envelope.error?.message ?? "The required source inputs could not be retrieved."}</p>{mode === "live" && <p>Selected meeting: <strong>{meeting}</strong> · searched outcome: <strong>{outcome >= 0 ? "+" : ""}{outcome} bp</strong>. No quote or depth has been inferred.</p>}</section>}
-      {analysis && envelope && <><Decision analysis={analysis} mode={mode} /><nav className="tabs" aria-label="Research sections">{TABS.map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</nav><div className="tab-panel">
-        {tab === "Overview" && <section><div className="section-title"><p className="eyebrow">Decision summary</p><h2>Why the apparent gap does not clear the gate</h2></div><div className="two-col"><div className="panel"><h3>Model conclusion</h3><p>{analysis.classification === "TRUE_ARBITRAGE" ? "The supplied evidence passes every conservative test." : "Positive expected value is not enough. Unknown timing, depth, settlement, or a losing state prevents an arbitrage label."}</p><dl className="compact-list"><div><dt>Selected side</dt><dd>{analysis.chosenSide?.toUpperCase() ?? "Unavailable"}</dd></div><div><dt>Kalshi entry</dt><dd>{money(analysis.kalshiPrice, 2)}</dd></div><div><dt>Break-even probability</dt><dd>{pct(analysis.breakEven)}</dd></div><div><dt>Hedge</dt><dd>{analysis.futuresDirection ?? "Unavailable"} {analysis.futuresContracts === null ? "" : Math.abs(analysis.futuresContracts)}</dd></div></dl></div><div className="panel"><h3>Evidence standard</h3><p>Arbitrage requires executable, fresh, synchronized, sufficiently deep quotes; compatible settlement; nonnegative P&amp;L in every modeled and basis-stress state; and valid capital and position limits.</p><div className="tag-list">{analysis.riskFlags.map((flag) => <code key={flag}>{flag}</code>)}</div></div></div></section>}
+      {analysis && envelope && <><Decision analysis={analysis} mode={envelope.mode} /><nav className="tabs" aria-label="Research sections">{TABS.map((item) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>{item}</button>)}</nav><div className="tab-panel">
+        {tab === "Overview" && <section><div className="section-title"><p className="eyebrow">Decision summary</p><h2>Why the apparent gap does not clear the gate</h2></div><div className="two-col"><div className="panel"><h3>Model conclusion</h3><p>{analysis.classification === "TRUE_ARBITRAGE" ? "The supplied evidence passes every conservative test." : "Positive expected value is not enough. Arbitrage also needs verified timing, depth, settlement and nonnegative payoff in every modeled state."}</p><dl className="compact-list"><div><dt>Selected side</dt><dd>{analysis.chosenSide?.toUpperCase() ?? "Unavailable"}</dd></div><div><dt>Kalshi entry</dt><dd>{money(analysis.kalshiPrice, 2)}</dd></div><div><dt>Break-even probability</dt><dd>{pct(analysis.breakEven)}</dd></div><div><dt>Hedge</dt><dd>{analysis.futuresDirection ?? "Unavailable"} {analysis.futuresContracts === null ? "" : Math.abs(analysis.futuresContracts)}</dd></div></dl></div><div className="panel"><h3>Evidence standard</h3><p>Arbitrage requires executable, fresh, synchronized, sufficiently deep quotes; compatible settlement; nonnegative P&amp;L in every modeled and basis-stress state; and valid capital and position limits.</p><div className="tag-list">{analysis.riskFlags.map((flag) => <code key={flag}>{flag}</code>)}</div></div></div></section>}
         {tab === "Market Inputs" && <section><div className="section-title"><p className="eyebrow">Observed evidence</p><h2>Quotes stay attached to their source and timing</h2></div><div className="quote-grid"><article className="quote-card"><header><span>Kalshi event contract</span><strong>{val(market.ticker ?? kq.instrument ?? a.fixture)}</strong></header><div className="quote-main"><span>YES bid / ask</span><strong>{val(top.yes_bid ?? kq.bid ?? input.kalshi_yes_bid)} / {val(top.yes_ask ?? kq.ask ?? input.kalshi_yes_ask)}</strong></div><dl><div><dt>Title</dt><dd>{val(market.title)}</dd></div><div><dt>Depth</dt><dd>{val(top.yes_ask_quantity)}</dd></div><div><dt>Source time</dt><dd>{val(kq.source_timestamp)}</dd></div><div><dt>Receipt time</dt><dd>{val(kq.receipt_timestamp)}</dd></div><div><dt>Designation</dt><dd>{val(rec(envelope.data_quality).kalshi_mode ?? "not established")}</dd></div></dl></article><article className="quote-card"><header><span>30-Day Fed Funds future</span><strong>{val(fq.instrument ?? input.futures_symbol)}</strong></header><div className="quote-main"><span>Bid / ask / last</span><strong>{val(fq.bid ?? input.futures_bid)} / {val(fq.ask ?? input.futures_ask)} / {val(fq.last)}</strong></div><dl><div><dt>Source</dt><dd>{val(fq.source ?? (mode === "case-study" ? "Historical user-supplied observation" : null))}</dd></div><div><dt>Depth</dt><dd>Unavailable</dd></div><div><dt>Source time</dt><dd>{val(fq.source_timestamp)}</dd></div><div><dt>Receipt time</dt><dd>{val(fq.receipt_timestamp)}</dd></div><div><dt>Designation</dt><dd>{val(rec(envelope.data_quality).futures_mode ?? "not established")}</dd></div></dl></article></div><div className="panel provenance"><h3>Input provenance</h3><table><thead><tr><th>Input</th><th>Source</th><th>Source timestamp</th><th>Designation</th></tr></thead><tbody>{envelope.provenance.map((row, i) => <tr key={i}><td>{val(row.input)}</td><td>{val(row.source)}</td><td>{val(row.source_timestamp)}</td><td>{val(row.designation)}</td></tr>)}</tbody></table></div></section>}
         {tab === "Probability Decomposition" && <section><div className="section-title"><p className="eyebrow">Monthly-average normalization</p><h2>ZQ implies an expected rate, not a unique outcome probability</h2></div><div className="weights"><div style={{ flex: analysis.dayCount.pre_decision_days ?? 1 }}><strong>{analysis.dayCount.pre_decision_days ?? "—"} days</strong><span>Pre-meeting EFFR</span></div><div className="post" style={{ flex: analysis.dayCount.post_decision_days ?? 1 }}><strong>{analysis.dayCount.post_decision_days ?? "—"} days</strong><span>Post-meeting expectation</span></div></div><div className="equation"><span>100 − F</span><span>=</span><span>(d<sub>pre</sub>r<sub>pre</sub> + d<sub>post</sub>r<sub>post</sub>) / D</span></div><div className="two-col"><div className="panel"><h3>Futures-implied scenarios</h3><pre>{JSON.stringify(analysis.implied, null, 2)}</pre></div><div className="panel"><h3>Identified bounds vs selected model</h3><p>Bounds are supported by the expectation and constraints. The selected distribution is a regularized choice for point EV display; it is not uniquely implied by futures.</p><pre>{JSON.stringify(analysis.probability, null, 2)}</pre></div></div></section>}
         {tab === "Trade Construction" && <section><div className="section-title"><p className="eyebrow">Construction or threshold</p><h2>{analysis.classification === "TRUE_ARBITRAGE" ? "Modeled position" : "What would need to change?"}</h2></div><div className="metric-grid"><Metric label="Kalshi side" value={analysis.chosenSide?.toUpperCase() ?? "Unavailable"} /><Metric label="Entry price" value={money(analysis.kalshiPrice, 2)} /><Metric label="Contracts" value={val(analysis.kalshiContracts)} /><Metric label="ZQ hedge" value={`${analysis.futuresDirection ?? "Unavailable"} ${analysis.futuresContracts === null ? "" : Math.abs(analysis.futuresContracts)}`} /><Metric label="Estimated fees" value={money(analysis.fees, 2)} /><Metric label="Estimated margin" value={money(analysis.margin)} /><Metric label="Total capital" value={money(analysis.capitalRequired)} /><Metric label="Best / worst P&L" value={`${money(analysis.bestPnl)} / ${money(analysis.worstPnl)}`} /></div>{analysis.classification !== "TRUE_ARBITRAGE" && <div className="threshold-panel"><div><span>Maximum entry for zero EV</span><strong>{money(analysis.maxPrice, 3)}</strong></div>{Object.entries(analysis.hurdlePrices).map(([key, price]) => <div key={key}><span>Maximum price for {key.replace("pct", "%")} EV</span><strong>{money(price, 3)}</strong></div>)}<div><span>Minimum market depth</span><strong>{analysis.kalshiContracts ?? "Unavailable"} contracts</strong></div><div><span>Maximum quote-age difference</span><strong>{val(rec(envelope.data_quality).synchronization_threshold_seconds)} seconds</strong></div><div><span>Unresolved settlement assumption</span><strong>{analysis.reasons.includes("SETTLEMENT_MISMATCH") ? "Compatibility not verified" : "None recorded"}</strong></div></div>}</section>}

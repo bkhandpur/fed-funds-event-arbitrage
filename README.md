@@ -33,9 +33,9 @@ The existing Python package is the only analytical implementation. The web clien
 
 ## Data modes
 
-- **Live public data** — official FOMC dates, New York Fed EFFR and target context, public Kalshi definitions and books, and indicative Yahoo ZQ data. Live means recently retrieved public data, not synchronized or guaranteed-executable data.
-- **Historical case study** — the supplied September 16, 2026 observation: `ZQU26.CBT` at 96.2600 / 96.2625, Kalshi exact +25 bp YES at $0.87 / $0.88, and EFFR at 3.63%. Source timestamps, depth, synchronization, executability and independent settlement verification remain explicitly unavailable.
-- **Manual scenario** — controlled entry of dates, quotes, timestamps, depth, outcome, size, capital, costs, slippage, basis assumptions, settlement compatibility and tail constraints.
+- **Live public data:** official FOMC dates, New York Fed EFFR and target context, public Kalshi definitions and books, and indicative Yahoo ZQ data. Live means recently retrieved public data, not synchronized or guaranteed-executable data.
+- **Historical case study:** the supplied September 16, 2026 observation: `ZQU26.CBT` at 96.2600 / 96.2625, Kalshi exact +25 bp YES at $0.87 / $0.88, and EFFR at 3.63%. Source timestamps, depth, synchronization, executability and independent settlement verification remain explicitly unavailable.
+- **Manual scenario:** controlled entry of dates, quotes, timestamps, depth, outcome, size, capital, costs, slippage, basis assumptions, settlement compatibility and tail constraints.
 
 ## Data sources
 
@@ -68,6 +68,16 @@ State payoffs incorporate Kalshi fees, futures costs, margin, integer hedge sizi
 | `RELATIVE_VALUE_TRADE` | Expected value clears the hurdle, but at least one modeled state loses money |
 | `NO_TRADE` | At least one evidence, execution, limit or payoff gate fails |
 
+The integer optimizer in `math/arbitrage.py` maximizes minimum **net** state payoff.
+Entry cashflow is included in each state constraint. Short-sale credits require an
+explicit collateral requirement; entry debit and capital use are separate inputs.
+The zero position is feasible. Regression tests compare small cases with exhaustive
+integer enumeration. The website calls the scenario analysis service, which uses
+its own modeled hedge construction rather than this standalone optimizer.
+
+Live meeting selection uses the official calendar and advances to the next year
+when necessary. The default historical case retains its original September inputs.
+
 ## API
 
 The FastAPI boundary exposes:
@@ -84,13 +94,13 @@ Requests and responses use Pydantic models. Dates, datetimes, decimals and enums
 
 ## Local development
 
-Python 3.13 and Node.js 20 or newer are recommended.
+Python 3.13 and Node.js 22.13 or newer are recommended.
 
 ```bash
 python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-npm install
+npm ci
 ```
 
 Run the API and frontend in separate terminals:
@@ -117,7 +127,8 @@ mypy src dashboard scripts api
 npm run typecheck
 npm run lint
 npm test
-npm run build
+PYTHON_API_ORIGIN=http://127.0.0.1:8107 npm run build
+npx playwright install chromium
 npm run test:e2e
 ```
 

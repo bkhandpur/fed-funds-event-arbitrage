@@ -23,6 +23,8 @@ class FederalReserveCalendarProvider(CalendarProvider):
         html = self._load_html()
         text = " ".join(unescape(re.sub(r"<[^>]+>", " ", html)).split())
         year_heading = re.search(rf"{year}\s+FOMC\s+Meetings", text, re.I)
+        if not year_heading:
+            raise LookupError(f"No official FOMC calendar for {year}")
         if year_heading:
             following = text[year_heading.end() :]
             next_heading = re.search(r"\d{4}\s+FOMC\s+Meetings", following, re.I)

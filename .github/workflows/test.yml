@@ -15,7 +15,7 @@ jobs:
       - run: ruff format --check .
       - run: ruff check .
       - run: pytest -m 'not live'
-      - run: mypy src dashboard scripts
+      - run: mypy src dashboard scripts api
 
   web:
     runs-on: ubuntu-latest

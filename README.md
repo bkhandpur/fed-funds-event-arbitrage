@@ -124,6 +124,7 @@ pytest -m "not live"
 ruff format --check .
 ruff check .
 mypy src dashboard scripts api
+npm run format:check
 npm run typecheck
 npm run lint
 npm test

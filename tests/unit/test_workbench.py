@@ -287,3 +287,19 @@ def test_identified_boundary_probability_mass(mean, expected):
     result = regularized_distribution([0, 25, 50], mean, [1, 1, 1])
     assert result.probabilities == pytest.approx(expected, abs=1e-10)
     assert result.residuals["sum"] == pytest.approx(0, abs=1e-10)
+
+
+def test_synthetic_dates_do_not_inherit_official_calendar_provenance():
+    request = example_request(True)
+    assert request.meeting.source == "Synthetic reference A"
+    assert request.futures_quote.source == "Synthetic reference A"
+    assert request.futures_quote.observation_kind.value == "SYNTHETIC_EXAMPLE"
+
+
+def test_two_state_constraints_do_not_ignore_entered_probability_bounds():
+    req = changed(state_probability_bounds={25: [0.8, 1]})
+    with pytest.raises(ValueError, match="infeasible"):
+        analyze_request(req)
+    response = client.post("/api/analyze", json={"analysis": req.model_dump(mode="json")})
+    assert response.json()["ok"] is False
+    assert "infeasible" in response.json()["error"]["message"]

@@ -6,7 +6,7 @@
       "decision_date": "2026-09-16",
       "statement_time_et": "14:00",
       "effective_date": "2026-09-17",
-      "source": "Federal Reserve"
+      "source": "Historical user-supplied observation"
     },
     "futures_quote": {
       "instrument": "ZQU26.CBT",
@@ -127,7 +127,7 @@
     "historical_average_basis_bp": null
   },
   "result": {
-    "input_revision": "6f7da844c1bc8b671f0072353d35b6d3987d12a9165f1a05c5e07a2133b83d34",
+    "input_revision": "7b8627341c863904f2d5f76a81f98d5cdf146d9576f71529688c24d0b80616f1",
     "schema_version": "2.0",
     "model_version": "2.0.0",
     "workbench": {
@@ -4947,7 +4947,7 @@
       "decision_date": "2026-09-16",
       "statement_time_et": "14:00",
       "effective_date": "2026-09-17",
-      "source": "Federal Reserve"
+      "source": "Historical user-supplied observation"
     },
     "analysis_timestamp": "2026-09-14T16:00:00+00:00",
     "day_count": {
@@ -4963,7 +4963,7 @@
         "decision_date": "2026-09-16",
         "statement_time_et": "14:00",
         "effective_date": "2026-09-17",
-        "source": "Federal Reserve"
+        "source": "Historical user-supplied observation"
       },
       "futures_quote": {
         "instrument": "ZQU26.CBT",
@@ -5920,19 +5920,19 @@
         "UNSYNCHRONIZED_QUOTES"
       ],
       "risk_flags": [
-        "UNMODELED_OR_TAIL_OUTCOME_RISK",
-        "TRANSACTION_COSTS",
-        "FUTURES_BID_ASK_SPREAD",
-        "INSUFFICIENT_DEPTH",
-        "SETTLEMENT_DEFINITION_MISMATCH",
-        "KALSHI_BID_ASK_SPREAD",
-        "INTEGER_HEDGE_RESIDUAL",
-        "EFFR_TARGET_BASIS_RISK",
-        "MODEL_UNDERIDENTIFIED",
-        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
-        "STALE_QUOTE",
         "MISSING_BOOK_SIDE",
-        "CANNOT_EXECUTE_VENUES_ATOMICALLY"
+        "TRANSACTION_COSTS",
+        "MODEL_UNDERIDENTIFIED",
+        "INSUFFICIENT_DEPTH",
+        "UNMODELED_OR_TAIL_OUTCOME_RISK",
+        "STALE_QUOTE",
+        "CANNOT_EXECUTE_VENUES_ATOMICALLY",
+        "KALSHI_BID_ASK_SPREAD",
+        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
+        "FUTURES_BID_ASK_SPREAD",
+        "EFFR_TARGET_BASIS_RISK",
+        "INTEGER_HEDGE_RESIDUAL",
+        "SETTLEMENT_DEFINITION_MISMATCH"
       ],
       "worst_case_pnl_dollars": -1497.74050000003,
       "expected_value_dollars": -10.088727857153001

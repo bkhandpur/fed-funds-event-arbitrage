@@ -6,7 +6,7 @@
       "decision_date": "2026-09-15",
       "statement_time_et": "14:00",
       "effective_date": "2026-09-16",
-      "source": "Federal Reserve"
+      "source": "Synthetic reference A"
     },
     "futures_quote": {
       "instrument": "ZQU26.CBT",
@@ -21,7 +21,7 @@
       "delayed": false,
       "market_open": null,
       "raw": {},
-      "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+      "observation_kind": "SYNTHETIC_EXAMPLE",
       "mode": "EXECUTABLE",
       "has_bid_and_ask": true,
       "crossed": false
@@ -39,7 +39,7 @@
       "delayed": false,
       "market_open": null,
       "raw": {},
-      "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+      "observation_kind": "SYNTHETIC_EXAMPLE",
       "mode": "EXECUTABLE",
       "has_bid_and_ask": true,
       "crossed": false
@@ -106,7 +106,7 @@
     "historical_average_basis_bp": null
   },
   "result": {
-    "input_revision": "0605aac53c6fc267954f85c16c6298480ff1fec8267dcd326318f0dbef3f0faa",
+    "input_revision": "f173f54cdc78c91763fda81e88320bc0fb8f93b4932e54a714c350274b554aaa",
     "schema_version": "2.0",
     "model_version": "2.0.0",
     "workbench": {
@@ -2042,7 +2042,7 @@
       "decision_date": "2026-09-15",
       "statement_time_et": "14:00",
       "effective_date": "2026-09-16",
-      "source": "Federal Reserve"
+      "source": "Synthetic reference A"
     },
     "analysis_timestamp": "2026-09-14T16:00:00+00:00",
     "day_count": {
@@ -2058,7 +2058,7 @@
         "decision_date": "2026-09-15",
         "statement_time_et": "14:00",
         "effective_date": "2026-09-16",
-        "source": "Federal Reserve"
+        "source": "Synthetic reference A"
       },
       "futures_quote": {
         "instrument": "ZQU26.CBT",
@@ -2073,7 +2073,7 @@
         "delayed": false,
         "market_open": null,
         "raw": {},
-        "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+        "observation_kind": "SYNTHETIC_EXAMPLE",
         "mode": "EXECUTABLE",
         "has_bid_and_ask": true,
         "crossed": false
@@ -2091,7 +2091,7 @@
         "delayed": false,
         "market_open": null,
         "raw": {},
-        "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+        "observation_kind": "SYNTHETIC_EXAMPLE",
         "mode": "EXECUTABLE",
         "has_bid_and_ask": true,
         "crossed": false
@@ -2604,17 +2604,17 @@
         "UNSYNCHRONIZED_QUOTES"
       ],
       "risk_flags": [
-        "TRANSACTION_COSTS",
-        "FUTURES_BID_ASK_SPREAD",
-        "INSUFFICIENT_DEPTH",
-        "KALSHI_BID_ASK_SPREAD",
-        "SETTLEMENT_DEFINITION_MISMATCH",
-        "INTEGER_HEDGE_RESIDUAL",
-        "EFFR_TARGET_BASIS_RISK",
-        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
-        "STALE_QUOTE",
         "MISSING_BOOK_SIDE",
-        "CANNOT_EXECUTE_VENUES_ATOMICALLY"
+        "TRANSACTION_COSTS",
+        "INSUFFICIENT_DEPTH",
+        "STALE_QUOTE",
+        "CANNOT_EXECUTE_VENUES_ATOMICALLY",
+        "KALSHI_BID_ASK_SPREAD",
+        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
+        "FUTURES_BID_ASK_SPREAD",
+        "EFFR_TARGET_BASIS_RISK",
+        "INTEGER_HEDGE_RESIDUAL",
+        "SETTLEMENT_DEFINITION_MISMATCH"
       ],
       "worst_case_pnl_dollars": -67.30500000001187,
       "expected_value_dollars": -15.197499999990534

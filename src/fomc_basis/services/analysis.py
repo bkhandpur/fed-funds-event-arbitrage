@@ -15,11 +15,20 @@ def example_request(
     quote = {
         "source": "Synthetic reference A" if reference else "Historical user-supplied observation",
         "receipt_timestamp": stamp,
-        "observation_kind": "HISTORICAL_USER_SUPPLIED_FIXTURE",
+        "observation_kind": "SYNTHETIC_EXAMPLE"
+        if reference
+        else "HISTORICAL_USER_SUPPLIED_FIXTURE",
     }
     return AnalysisRequest.model_validate(
         {
-            "meeting": {"start_date": day, "decision_date": day, "effective_date": effective},
+            "meeting": {
+                "start_date": day,
+                "decision_date": day,
+                "effective_date": effective,
+                "source": "Synthetic reference A"
+                if reference
+                else "Historical user-supplied observation",
+            },
             "analysis_timestamp": stamp,
             "futures_quote": {
                 **quote,

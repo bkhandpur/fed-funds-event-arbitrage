@@ -65,6 +65,15 @@ def _probability_model(
             for state, probability in zip(result.states_bp, result.probabilities, strict=True)
         }
         selected = [exact.get(state, (0.0, 0.0))[0] for state in states]
+        for state, probability in zip(states, selected, strict=True):
+            lower, upper = request.state_probability_bounds.get(state, (0.0, 1.0))
+            if (
+                probability < lower - request.probability_tolerance
+                or probability > upper + request.probability_tolerance
+            ):
+                raise ValueError(
+                    "two-state assumptions are infeasible with declared probability bounds"
+                )
         return (
             ProbabilityResult(
                 states_bp=states,

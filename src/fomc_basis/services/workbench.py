@@ -86,10 +86,13 @@ def ledger_bounds(
     states = request.state_grid_bp
     bounds = [request.state_probability_bounds.get(s, (0, 1)) for s in states]
     if request.probability_mode == "two_state":
-        bounds = [
-            (0, 1) if s in (request.two_state_low_bp, request.kalshi_outcome_bp) else (0, 0)
-            for s in states
-        ]
+        for index, state in enumerate(states):
+            if state not in (request.two_state_low_bp, request.kalshi_outcome_bp):
+                if bounds[index][0] > 0:
+                    raise ValueError(
+                        "two-state assumptions are infeasible with declared tail bounds"
+                    )
+                bounds[index] = (0, 0)
     constraints = np.array([np.ones(len(states)), states])
     minimum = linprog(
         values, A_eq=constraints, b_eq=[1, expected_move], bounds=bounds, method="highs"

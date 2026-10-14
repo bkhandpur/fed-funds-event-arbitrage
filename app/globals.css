@@ -346,3 +346,7 @@ summary {
 .wb-inputs fieldset {
   min-width: 0;
 }
+
+.wb-chart {
+  overflow-x: auto;
+}

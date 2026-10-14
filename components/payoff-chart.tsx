@@ -21,6 +21,7 @@ export function PayoffChart({ rows, unhedged }: { rows: Ledger[]; unhedged: Ledg
       <figcaption>Signed state payoff in dollars</figcaption>
       <svg
         viewBox={`0 0 ${Math.max(480, rows.length * 100 + 80)} 270`}
+        style={{ minWidth: Math.max(480, rows.length * 100 + 80) }}
         role="img"
         aria-label={`Selected combined payoffs ${rows.map((r) => `${r.move_bp} bp ${money(r.combined_net_pnl_dollars)}`).join(", ")}`}
       >

@@ -26,8 +26,8 @@ def test_case_study_preserves_unavailable_evidence() -> None:
     response = client.get("/api/case-study")
     assert response.status_code == 200
     body = response.json()
-    assert body["analysis"]["inputs"]["futures_symbol"] == "ZQU26.CBT"
-    assert body["analysis"]["inputs"]["futures_bid"] == 96.26
+    assert body["analysis"]["inputs"]["futures_quote"]["instrument"] == "ZQU26.CBT"
+    assert float(body["analysis"]["inputs"]["futures_quote"]["bid"]) == 96.26
     assert body["data_quality"]["source_timestamp"] is None
     assert body["data_quality"]["futures_depth"] is None
     assert body["data_quality"]["executability"] == "not_established"

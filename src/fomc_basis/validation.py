@@ -22,7 +22,7 @@ def quote_risk_flags(
         if quote.mode.value == "INDICATIVE_ONLY":
             flags.add(RiskFlag.INDICATIVE_ONLY)
         age = quote.age_seconds(analysis_timestamp)
-        if age is None or age > stale_warning_seconds:
+        if age is None or age < -5 or age > stale_warning_seconds:
             flags.add(RiskFlag.STALE_QUOTE)
         if quote.bid is not None and quote.ask is not None:
             if quote.bid > quote.ask:
@@ -57,8 +57,19 @@ def arbitrage_quote_gate(
     reasons: list[str] = []
     if any(quote.mode.value != "EXECUTABLE" for quote in quotes):
         reasons.append("NON_EXECUTABLE_QUOTES")
+    if any(q.delayed for q in quotes):
+        reasons.append("DELAYED_OBSERVATION")
+    if any(q.market_open is not True for q in quotes):
+        reasons.append("MARKET_STATUS_UNVERIFIED")
+    if any((q.receipt_timestamp - analysis_timestamp).total_seconds() > 5 for q in quotes):
+        reasons.append("FUTURE_RECEIPT_TIMESTAMP")
+    if any(
+        q.source_timestamp and (q.source_timestamp - analysis_timestamp).total_seconds() > 5
+        for q in quotes
+    ):
+        reasons.append("FUTURE_SOURCE_TIMESTAMP")
     ages = [quote.age_seconds(analysis_timestamp) for quote in quotes]
-    if any(age is None or age > stale_hard_seconds for age in ages):
+    if any(age is None or age < -5 or age > stale_hard_seconds for age in ages):
         reasons.append("STALE_QUOTES")
     timestamps = [quote.source_timestamp for quote in quotes if quote.source_timestamp is not None]
     if len(timestamps) != len(quotes) or (

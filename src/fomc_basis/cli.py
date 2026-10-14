@@ -586,5 +586,15 @@ def export(
     _print({"files": [str(path) for path in paths]}, json_output)
 
 
+@app.command("rerun")
+def rerun(path: Path) -> None:
+    """Rerun a version 2 research request or exported request and result."""
+    value = json.loads(path.read_text())
+    if value.get("schema_version") != "2.0":
+        raise typer.BadParameter("export schema_version must be 2.0")
+    request = AnalysisRequest.model_validate(value.get("request", value.get("inputs")))
+    typer.echo(json.dumps(analyze_request(request), indent=2, default=str))
+
+
 if __name__ == "__main__":
     app()

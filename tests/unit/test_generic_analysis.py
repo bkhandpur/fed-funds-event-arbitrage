@@ -89,15 +89,22 @@ def test_final_calendar_day_requires_following_contract() -> None:
             )
         }
     )
-    with pytest.raises(ValueError, match="following ZQ"):
-        analyze_request(invalid)
+    result = analyze_request(invalid)
+    assert result["day_count"]["days_in_month"] == 30
+    assert result["day_count"]["pre_decision_days"] == 0
+    assert result["workbench"]["conventions"]["settlement_month"] == "2027-04-01"
+    evidence = {e["check"]: e["status"] for e in result["workbench"]["evidence"]}
+    assert evidence["Contract month"] == "fail"
 
 
 def test_no_change_market_does_not_divide_by_zero() -> None:
     no_change = request().model_copy(update={"kalshi_outcome_bp": 0})
     result = analyze_request(no_change)
-    assert result["hedge"]["nearest_futures_contracts"] == 0
-    assert result["hedge"]["entry_side"] == "none"
+    # A no-change binary has a payout difference and can have a pair hedge.
+    w = result["workbench"]
+    assert w["benchmark_states_bp"][1] == 0
+    assert w["continuous_pair_hedge"] != 0
+    assert all(abs(r["combined_net_pnl_dollars"]) < 1e6 for r in w["selected"]["ledger"])
 
 
 def test_user_specified_tail_mode_reports_model_provenance() -> None:

@@ -18,9 +18,13 @@ if str(SRC) not in sys.path:
 
 from fomc_basis.models import AnalysisRequest  # noqa: E402
 from fomc_basis.providers.federal_reserve import FederalReserveCalendarProvider  # noqa: E402
-from fomc_basis.services.analysis import analyze_september_2026_fixture  # noqa: E402
+from fomc_basis.services.analysis import (  # noqa: E402
+    analyze_september_2026_fixture,
+    example_request,
+)
 from fomc_basis.services.generic_analysis import analyze_request  # noqa: E402
 from fomc_basis.services.live_analysis import analyze_live_meeting  # noqa: E402
+from fomc_basis.services.workbench import AnalysisResponse  # noqa: E402
 
 
 class ErrorDetail(BaseModel):
@@ -56,7 +60,7 @@ class AnalysisEnvelope(BaseModel):
     ok: bool
     mode: Literal["live", "case-study", "manual"]
     status: Literal["complete", "degraded", "unavailable"]
-    analysis: dict[str, Any] | None = None
+    analysis: AnalysisResponse | None = None
     data_quality: dict[str, Any]
     provenance: list[dict[str, Any]]
     error: ErrorDetail | None = None
@@ -87,7 +91,7 @@ async def vercel_entry(request: Request) -> Any:
         if endpoint == "meetings":
             return meetings(int(request.query_params["year"]))
         if endpoint == "case-study":
-            return case_study()
+            return case_study(request.query_params.get("example", "september"))
         if endpoint == "live":
             return live(
                 date.fromisoformat(request.query_params["meeting"]),
@@ -155,13 +159,15 @@ def _quality(analysis: dict[str, Any] | None, *, mode: str) -> dict[str, Any]:
         },
         "executability": (
             "established"
-            if quality.get("futures_mode") == quality.get("kalshi_mode") == "EXECUTABLE"
+            if analysis.get("workbench", {}).get("execution_status") == "verified"
+            and quality.get("futures_mode") == quality.get("kalshi_mode") == "EXECUTABLE"
             and "NON_EXECUTABLE_QUOTES" not in reason_codes
             else "not_established"
         ),
         "synchronization": (
             "established"
-            if quality.get("cross_venue_timestamp_difference_seconds") is not None
+            if analysis.get("workbench", {}).get("execution_status") == "verified"
+            and quality.get("cross_venue_timestamp_difference_seconds") is not None
             and quality["cross_venue_timestamp_difference_seconds"]
             <= quality.get("synchronization_threshold_seconds", 0)
             else "not_established"
@@ -174,7 +180,10 @@ def _provenance(analysis: dict[str, Any] | None, *, mode: str) -> list[dict[str,
         return [
             {
                 "input": "ZQ futures, Kalshi contract, and EFFR",
-                "source": "Historical user-supplied observation",
+                "source": (analysis or {})
+                .get("inputs", {})
+                .get("futures_quote", {})
+                .get("source", "Historical user-supplied observation"),
                 "source_timestamp": None,
                 "designation": "non-executable",
             }
@@ -253,15 +262,19 @@ def meetings(year: int = Query(ge=2000, le=2100)) -> MeetingsResponse:
 
 
 @app.get("/api/case-study", response_model=AnalysisEnvelope)
-def case_study() -> AnalysisEnvelope:
-    analysis = analyze_september_2026_fixture()
+def case_study(example: str = "september") -> AnalysisEnvelope:
+    analysis = (
+        analyze_request(example_request(True))
+        if example == "reference-a"
+        else analyze_september_2026_fixture()
+    )
     analysis["input_provenance"] = {
         "source_timestamp": None,
         "synchronization": "not_established",
         "futures_depth": None,
         "kalshi_depth": None,
         "executability": "not_established",
-        "provenance": "historical user-supplied observation",
+        "provenance": analysis["inputs"]["futures_quote"]["source"],
         "settlement_compatibility": "not independently verified",
     }
     return AnalysisEnvelope(

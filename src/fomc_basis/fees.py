@@ -14,6 +14,7 @@ class KalshiFeeSchedule:
     maker_coefficient: Decimal = Decimal("0")
     settlement_fee_per_contract: Decimal = Decimal("0")
     effective_date: date | None = None
+    rounding_dollars: Decimal = CENT
 
     def order_fee(
         self, contracts: int, price_dollars: Decimal, *, maker: bool = False, zero_fee: bool = False
@@ -27,7 +28,11 @@ class KalshiFeeSchedule:
             return Decimal("0")
         coefficient = self.maker_coefficient if maker else self.coefficient
         raw = coefficient * Decimal(contracts) * price_dollars * (Decimal("1") - price_dollars)
-        return raw.quantize(CENT, rounding=ROUND_CEILING)
+        return (
+            (raw + Decimal(contracts) * price_dollars) / self.rounding_dollars
+        ).to_integral_value(rounding=ROUND_CEILING) * self.rounding_dollars - Decimal(
+            contracts
+        ) * price_dollars
 
     def total_fee(self, contracts: int, price_dollars: Decimal, **kwargs: bool) -> Decimal:
         return (

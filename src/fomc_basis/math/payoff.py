@@ -18,6 +18,8 @@ class StatePayoff:
     combined_net_pnl_dollars: float
     capital_required_dollars: float
     return_on_capital: float
+    kalshi_slippage_dollars: float = 0.0
+    kalshi_quote_acquisition_dollars: float = 0.0
 
     def as_dict(self) -> dict[str, float | int]:
         return asdict(self)
@@ -41,15 +43,20 @@ def state_payoff_table(
     post_days: int,
     futures_margin_per_contract_dollars: float,
     basis_change_bp: float = 0.0,
+    slippage_per_kalshi_contract_dollars: float = 0.0,
+    no_change_effr_pct: float | None = None,
 ) -> list[StatePayoff]:
     """Positive futures count is long and must have entered at the executable ask."""
     if kalshi_side not in {"yes", "no"}:
         raise ValueError("kalshi_side must be yes or no")
-    acquisition = kalshi_contracts * kalshi_entry_price_dollars
+    slippage = kalshi_contracts * slippage_per_kalshi_contract_dollars
+    quote_cash = kalshi_contracts * kalshi_entry_price_dollars
+    acquisition = quote_cash + slippage
     futures_costs = abs(futures_contracts) * futures_round_trip_cost_per_contract_dollars
     capital = (
         acquisition
         + kalshi_total_fees_dollars
+        + futures_costs
         + abs(futures_contracts) * futures_margin_per_contract_dollars
     )
     rows = []
@@ -59,7 +66,13 @@ def state_payoff_table(
         wins = yes_settles if kalshi_side == "yes" else not yes_settles
         settlement = float(kalshi_contracts if wins else 0)
         futures_settle = futures_settlement_price(
-            pre_effr_pct, move, days_in_month, pre_days, post_days, basis_change_bp
+            pre_effr_pct,
+            move,
+            days_in_month,
+            pre_days,
+            post_days,
+            basis_change_bp,
+            no_change_effr_pct,
         )
         futures_pnl = (
             (futures_settle - futures_entry_price_points)
@@ -80,6 +93,8 @@ def state_payoff_table(
                 net,
                 capital,
                 net / capital if capital else 0.0,
+                slippage,
+                quote_cash,
             )
         )
     return rows

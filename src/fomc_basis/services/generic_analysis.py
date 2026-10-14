@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from ..day_count import meeting_day_count
 from ..enums import QuoteMode, RiskFlag
@@ -11,7 +13,6 @@ from ..math.expected_value import (
     binary_ev_per_contract,
     break_even_probability,
     expected_return_on_cash,
-    price_for_ev_hurdle,
 )
 from ..math.fed_funds import (
     equivalent_probability_25bp,
@@ -20,7 +21,6 @@ from ..math.fed_funds import (
     quote_probability_sensitivity,
 )
 from ..math.hedge import integer_hedges
-from ..math.payoff import state_payoff_table
 from ..math.probabilities import (
     probability_bounds,
     regularized_distribution,
@@ -29,6 +29,7 @@ from ..math.probabilities import (
 )
 from ..models import AnalysisRequest, ProbabilityResult
 from ..validation import arbitrage_quote_gate, quote_risk_flags
+from .workbench import construct_workbench
 
 
 def _reference_prices(request: AnalysisRequest) -> dict[str, float]:
@@ -167,6 +168,24 @@ def _ev_summary(
                 high = midpoint
         return float(low)
 
+    def price_hurdle(hurdle: float) -> float | None:
+        win_probability = probability if side == "yes" else 1 - probability
+
+        def excess(candidate: Decimal) -> float:
+            fee = fee_schedule.total_fee(contracts, candidate, maker=maker, zero_fee=zero_fee)
+            return win_probability - float(candidate + fee / contracts + slippage) - hurdle
+
+        low, high = Decimal(0), Decimal(1)
+        if excess(low) < 0:
+            return None
+        for _ in range(60):
+            midpoint = (low + high) / 2
+            if excess(midpoint) >= 0:
+                low = midpoint
+            else:
+                high = midpoint
+        return float(low)
+
     return {
         "available": True,
         "price_dollars": float(price),
@@ -193,14 +212,9 @@ def _ev_summary(
         "break_even_probability": break_even_probability(
             price, fee_per_contract, slippage, side=side
         ),
-        "break_even_price_dollars": price_for_ev_hurdle(
-            probability, 0, float(fee_per_contract + slippage), side=side
-        ),
+        "break_even_price_dollars": price_hurdle(0),
         "ev_hurdle_prices": {
-            f"{int(hurdle * 100)}pct": price_for_ev_hurdle(
-                probability, hurdle, float(fee_per_contract + slippage), side=side
-            )
-            for hurdle in (0.01, 0.02, 0.05, 0.10)
+            f"{int(hurdle * 100)}pct": price_hurdle(hurdle) for hurdle in (0.01, 0.02, 0.05, 0.10)
         },
         "return_on_capital_hurdle_prices": {
             f"{int(hurdle * 100)}pct": roc_price(hurdle) for hurdle in (0.01, 0.02, 0.05, 0.10)
@@ -210,7 +224,11 @@ def _ev_summary(
 
 def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
     """Analyze any meeting using validated manual, replayed, or live provider quotes."""
-    day_count = meeting_day_count(request.meeting.decision_date, request.meeting.effective_date)
+    # Settlement is in the effective month, including first-day rollover.
+    day_count = meeting_day_count(
+        request.meeting.effective_date.replace(day=1), request.meeting.effective_date
+    )
+    day_count = day_count.model_copy(update={"decision_date": request.meeting.decision_date})
     if day_count.post_decision_days == 0:
         raise ValueError("decision effective after month-end; use the following ZQ contract")
     selected_post_basis_bp = (
@@ -226,8 +244,8 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
     no_change_effr_pct = (
         request.no_change_effr_pct
         if request.no_change_effr_pct is not None
-        else request.current_effr_pct + central_basis_change_bp / 100.0
-    )
+        else request.current_effr_pct
+    ) + central_basis_change_bp / 100.0
     prices = _reference_prices(request)
     implied: dict[str, dict[str, float]] = {}
     for label, price in prices.items():
@@ -236,7 +254,9 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
             day_count.days_in_month,
             day_count.pre_decision_days,
             day_count.post_decision_days,
-            request.current_effr_pct,
+            request.pre_effective_effr_average_pct
+            if request.pre_effective_effr_average_pct is not None
+            else request.current_effr_pct,
         )
         move = expected_move_bp(post_effr, no_change_effr_pct)
         implied[label] = {
@@ -270,6 +290,7 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         maker_coefficient=request.kalshi_maker_fee_coefficient,
         settlement_fee_per_contract=request.kalshi_settlement_fee_per_contract_dollars,
         effective_date=request.kalshi_fee_schedule_effective_date,
+        rounding_dollars=request.kalshi_fee_rounding_dollars,
     )
     if request.kalshi_outcome_bp == 0:
         estimated_futures_contracts = 0
@@ -348,75 +369,40 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         key=lambda item: item[1]["conservative_ev_order_dollars"],
     )
 
-    side_sign = 1 if chosen_side == "yes" else -1
-    if request.kalshi_outcome_bp == 0:
-        continuous_hedge = 0.0
-        futures_contracts = 0
-        hedge_residual = float(request.kalshi_contracts * side_sign)
-    else:
-        hedge_magnitude = integer_hedges(
-            request.kalshi_contracts,
-            day_count.days_in_month,
-            day_count.post_decision_days,
-            abs(request.kalshi_outcome_bp),
-        )
-        policy_sign = 1 if request.kalshi_outcome_bp > 0 else -1
-        futures_sign = policy_sign * side_sign
-        nearest = hedge_magnitude["nearest"]
-        continuous_hedge = hedge_magnitude["continuous"] * futures_sign
-        futures_contracts = nearest.futures_contracts * futures_sign
-        hedge_residual = nearest.residual_dollars * side_sign
-    future_entry = request.futures_quote.ask if futures_contracts > 0 else request.futures_quote.bid
-    if future_entry is None:
-        future_entry = Decimal(str(prices[center_label]))
+    if request.selected_binary_side is not None:
+        chosen_side = request.selected_binary_side
+        chosen_ev = sides[chosen_side]
+        if not chosen_ev.get("available"):
+            raise ValueError("selected binary side has no usable acquisition quote")
     chosen_binary_price = yes_price if chosen_side == "yes" else no_price
-    if chosen_binary_price is None:  # guarded by available_sides
-        raise ValueError("chosen binary side has no usable price")
-    chosen_total_fee = chosen_ev["fee_total_dollars"]
-    payoffs = state_payoff_table(
-        request.state_grid_bp,
-        kalshi_outcome_bp=request.kalshi_outcome_bp,
-        kalshi_winning_states_bp=winning_states,
-        kalshi_side=chosen_side,
-        kalshi_contracts=request.kalshi_contracts,
-        kalshi_entry_price_dollars=float(chosen_binary_price),
-        kalshi_total_fees_dollars=chosen_total_fee,
-        futures_contracts=futures_contracts,
-        futures_entry_price_points=float(future_entry),
-        futures_round_trip_cost_per_contract_dollars=(
-            request.futures_round_trip_cost_per_contract_dollars
-        ),
-        pre_effr_pct=request.current_effr_pct,
-        days_in_month=day_count.days_in_month,
-        pre_days=day_count.pre_decision_days,
-        post_days=day_count.post_decision_days,
-        futures_margin_per_contract_dollars=request.futures_margin_per_contract_dollars,
-        basis_change_bp=central_basis_change_bp,
+    if chosen_binary_price is None:
+        raise ValueError("chosen side has no usable acquisition quote")
+    workbench = construct_workbench(
+        request,
+        day_count,
+        chosen_side,
+        chosen_binary_price,
+        selected,
+        center_move,
+        outcome_bounds,
+        central_basis_change_bp,
     )
-    basis_stress_rows = []
-    for basis_change_bp in request.basis_scenarios_bp:
-        basis_stress_rows.extend(
-            state_payoff_table(
-                request.state_grid_bp,
-                kalshi_outcome_bp=request.kalshi_outcome_bp,
-                kalshi_winning_states_bp=winning_states,
-                kalshi_side=chosen_side,
-                kalshi_contracts=request.kalshi_contracts,
-                kalshi_entry_price_dollars=float(chosen_binary_price),
-                kalshi_total_fees_dollars=chosen_total_fee,
-                futures_contracts=futures_contracts,
-                futures_entry_price_points=float(future_entry),
-                futures_round_trip_cost_per_contract_dollars=(
-                    request.futures_round_trip_cost_per_contract_dollars
-                ),
-                pre_effr_pct=request.current_effr_pct,
-                days_in_month=day_count.days_in_month,
-                pre_days=day_count.pre_decision_days,
-                post_days=day_count.post_decision_days,
-                futures_margin_per_contract_dollars=(request.futures_margin_per_contract_dollars),
-                basis_change_bp=central_basis_change_bp + basis_change_bp,
-            )
-        )
+    selected_candidate = workbench.selected
+    futures_contracts = selected_candidate.futures_contracts
+    continuous_hedge = workbench.continuous_pair_hedge
+    pair_low, pair_high = workbench.benchmark_states_bp
+    pair_values = {
+        int(row["move_bp"]): float(row["combined_net_pnl_dollars"])
+        for row in selected_candidate.ledger
+    }
+    hedge_residual = pair_values[pair_high] - pair_values[pair_low]
+    future_entry = Decimal(str(selected_candidate.entry_price_points))
+    from ..math.payoff import StatePayoff
+
+    payoffs = [StatePayoff(**cast(dict[str, Any], row)) for row in selected_candidate.ledger]
+    basis_stress_rows = [
+        StatePayoff(**cast(dict[str, Any], row)) for row in selected_candidate.stress
+    ]
 
     quote_flags = quote_risk_flags(
         [request.futures_quote, request.kalshi_yes_quote],
@@ -475,9 +461,9 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         quote_flags.add(RiskFlag.CAPITAL_LIMIT)
     classification = classify(
         [row.combined_net_pnl_dollars for row in payoffs],
-        chosen_ev["conservative_ev_order_dollars"],
+        workbench.selected.economics.combined_feasible_ev_dollars[0],
         quote_flags,
-        executable=quote_gate and binary_executable,
+        executable=False,  # Research inputs do not independently certify execution.
         all_outcomes_modeled=request.all_outcomes_modeled,
         settlement_compatible=request.settlement_compatible,
         depth_sufficient=depth_sufficient,
@@ -488,7 +474,18 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         ev_hurdle_dollars=request.ev_hurdle_dollars,
         tolerance=request.arbitrage_tolerance_dollars,
     )
-    classification.reason_codes = sorted(set(classification.reason_codes + quote_reasons))
+    classification.reason_codes = sorted(
+        set(
+            classification.reason_codes
+            + quote_reasons
+            + [
+                e.check.upper().replace(" ", "_") + "_UNVERIFIED"
+                for e in workbench.evidence
+                if e.status != "pass"
+            ]
+        )
+    )
+    classification.expected_value_dollars = workbench.selected.economics.combined_model_ev_dollars
     q_values = [item["25_BP_EQUIVALENT_PROBABILITY"] for item in implied.values()]
     source_timestamps = [
         quote.source_timestamp
@@ -509,6 +506,12 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         day_count.days_in_month, day_count.post_decision_days
     )
     return {
+        "input_revision": hashlib.sha256(
+            json.dumps(request.model_dump(mode="json"), sort_keys=True).encode()
+        ).hexdigest(),
+        "schema_version": "2.0",
+        "model_version": "2.0.0",
+        "workbench": workbench.model_dump(mode="json"),
         "meeting": request.meeting.model_dump(mode="json"),
         "analysis_timestamp": request.analysis_timestamp.isoformat(),
         "day_count": day_count.model_dump(mode="json"),
@@ -569,14 +572,9 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
             "continuous_futures_contracts": continuous_hedge,
             "nearest_futures_contracts": futures_contracts,
             "nearest_residual_dollars": hedge_residual,
-            "entry_side": (
-                "ask" if futures_contracts > 0 else "bid" if futures_contracts < 0 else "none"
-            ),
+            "entry_side": selected_candidate.entry_side,
             "entry_price_points": float(future_entry),
-            "scope_warning": (
-                "Hedge only targets the no-change versus selected-outcome comparison; "
-                "tails, basis changes, and settlement mismatch remain."
-            ),
+            "scope_warning": "Pair flattening benchmark uses actual payout and settlement differences",
         },
         "quote_sensitivity": {
             "dq_d_futures_price_point": sensitivity,

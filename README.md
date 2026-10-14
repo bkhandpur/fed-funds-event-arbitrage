@@ -1,12 +1,12 @@
-# FOMC Basis Monitor
+# FOMC Scenario Workbench
 
-An execution-aware research monitor that tests whether a probability gap between Kalshi FOMC contracts and 30-Day Fed Funds futures survives contract normalization, costs and hard trading constraints.
+Compare Kalshi policy outcomes with monthly-average Fed Funds futures. Inspect probability bounds, binary and combined EV, whole-contract hedges, basis stress and leg cashflows.
 
-**[Open the live application](https://fed-funds-event-arbitrage.vercel.app)** · [Methodology](#methodology) · [Run locally](#local-development)
+**[Open the workbench](https://fed-funds-event-arbitrage.vercel.app)** · [Numerical conventions](docs/workbench.md) · [Run locally](#local-development)
 
-![FOMC Basis Monitor showing a NO TRADE decision and its blocking conditions](public/dashboard-preview.png)
+![FOMC scenario workspace with signed payoffs and separate leg economics](public/dashboard-preview.png)
 
-A positive expected value is not labeled arbitrage unless the supplied evidence establishes executable, fresh, synchronized and sufficiently deep quotes; compatible settlement; nonnegative payoff across every modeled and basis-stress state; and valid capital and position limits.
+Start with the September observation or synthetic reference A. Clone the actual request into manual mode, change assumptions, retain a base scenario and export a rerunnable result. Source dates stay attached to results. Finite modeled payoffs and user assertions do not establish executable arbitrage.
 
 ## Research question
 
@@ -59,21 +59,18 @@ For a meeting whose rate decision becomes effective during the contract month:
 
 The model solves for the futures-implied post-meeting EFFR, then expresses the expected move on a policy-state grid. Under a strict two-state 0/+25 bp assumption, that expectation maps to a +25 bp probability. Once cuts, larger hikes or other tails are admitted, futures identify an expected value rather than a unique exact-outcome distribution. The package therefore reports identified probability bounds separately from a regularized, prior-conditioned distribution used for point EV display.
 
-State payoffs incorporate Kalshi fees, futures costs, margin, integer hedge sizing and EFFR/target basis stress. Classification remains deliberately conservative:
+State ledgers separate payout, acquisition including slippage, rounded binary fees, futures gross P&L and round-trip futures costs. Margin is locked capital rather than a P&L expense. Joint EV bounds optimize the entire ledger over one feasible probability set. User-view distributions have separate moments and EV.
 
-| Classification                         | Meaning                                                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `TRUE_ARBITRAGE`                       | Every execution and evidence gate passes; every modeled and basis-stress state is nonnegative, with at least one positive state |
-| `NEAR_ARBITRAGE_WITH_SMALL_BASIS_RISK` | Modeled state payoffs survive, with limited residual basis risk                                                                 |
-| `RELATIVE_VALUE_TRADE`                 | Expected value clears the hurdle, but at least one modeled state loses money                                                    |
-| `NO_TRADE`                             | At least one evidence, execution, limit or payoff gate fails                                                                    |
+The workbench exhaustively compares bounded signed integer hedges for a fixed binary size. Its objective is highest conservative combined EV within declared stressed-loss, capital and position limits. Zero futures and no position are explicit alternatives. Pair flattening uses actual payout and exact settlement-price differences. Nearest rounding is a benchmark.
+
+Execution evidence is shown separately with pass, fail and unknown states. Historical, manual and current indicative live inputs remain execution unverified. The standalone classification API remains available for older callers.
 
 The integer optimizer in `math/arbitrage.py` maximizes minimum **net** state payoff.
 Entry cashflow is included in each state constraint. Short-sale credits require an
 explicit collateral requirement; entry debit and capital use are separate inputs.
 The zero position is feasible. Regression tests compare small cases with exhaustive
 integer enumeration. The website calls the scenario analysis service, which uses
-its own modeled hedge construction rather than this standalone optimizer.
+exact fixed-size enumeration with rounded binary order fees rather than this standalone optimizer.
 
 Live meeting selection uses the official calendar and advances to the next year
 when necessary. The default historical case retains its original September inputs.
@@ -86,11 +83,12 @@ The FastAPI boundary exposes:
 GET  /api/health
 GET  /api/meetings?year=YYYY
 GET  /api/case-study
+GET  /api/case-study?example=reference-a
 GET  /api/live?meeting=YYYY-MM-DD&outcome_bp=25&contracts=500
 POST /api/analyze
 ```
 
-Requests and responses use Pydantic models. Dates, datetimes, decimals and enums are serialized predictably. Live responses are cached for 45 seconds and distinguish source timestamps from receipt timestamps. Provider and unavailable-market failures return structured, research-useful responses rather than inventing prices or depth.
+Responses use the shared version 2 Pydantic analysis schema. Legacy historical flat input fields have moved to `inputs.futures_quote`, `inputs.kalshi_yes_quote` and `inputs.current_effr_pct`. Routes and CLI entry points are preserved. Dates, datetimes, decimals and enums are serialized predictably. Live responses are cached for 45 seconds and distinguish source timestamps from receipt timestamps. Provider and unavailable-market failures return structured, research-useful responses rather than inventing prices or depth.
 
 ## Local development
 
@@ -114,6 +112,7 @@ The original interfaces remain available:
 
 ```bash
 fomc-basis analyze --meeting 2026-09-16
+fomc-basis rerun examples/reference-a-v2.json
 streamlit run dashboard/app.py
 ```
 
@@ -147,7 +146,7 @@ If the Python function eventually exceeds Vercel's bundle constraints, the suppo
 - Kalshi public market data does not establish atomic cross-venue execution.
 - Kalshi books provide venue depth, but the provider does not receive an exchange source timestamp; receipt time is not presented as source time.
 - Settlement compatibility requires independent contract review and defaults to false in live analysis.
-- Fee schedules and margin are configured assumptions, not dynamically verified broker terms.
+- Fee schedules and margin are configured assumptions. The checked July 7 2026 fee reference uses centicent rounding. Reference A intentionally uses a synthetic cent-rounded fee. Neither establishes broker terms.
 - The Federal Reserve calendar parser depends on published page structure.
 - Kalshi outcome mapping uses conservative semantic parsing and can return no match.
 - Multiple meetings in one ZQ month can underidentify a naive single-meeting decomposition.

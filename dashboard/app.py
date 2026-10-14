@@ -140,15 +140,15 @@ if data_mode == "September 2026 fixture":
     result = analyze_september_2026_fixture(int(contracts), tail)
     decision_for_display = date(2026, 9, 16)
     meeting_title = "September 16, 2026 fixture"
-    current_effr_pct = result["inputs"]["effr_pct"]
-    bounds_mapping = result["probability_bounds"]
-    selected_p25 = result["tail_adjustment"]["p25"]
-    yes_ev = result["expected_value"]["yes_per_contract_dollars"]
-    event_value = result["event_25bp_value_per_future_dollars"]
+    current_effr_pct = result["inputs"]["current_effr_pct"]
+    bounds_mapping = result["probability_model"]["bounds"]
+    selected_p25 = result["probability_model"]["kalshi_event_probability"]
+    yes_ev = result["expected_value"]["yes"]["model_ev_per_contract_dollars"]
+    event_value = 4167 * 0.25 * 14 / 30
     kalshi_summary = {
         "outcome": "exactly +25 bp",
-        "yes_bid": result["inputs"]["kalshi_yes_bid"],
-        "yes_ask": result["inputs"]["kalshi_yes_ask"],
+        "yes_bid": result["inputs"]["kalshi_yes_quote"]["bid"],
+        "yes_ask": result["inputs"]["kalshi_yes_quote"]["ask"],
         "depth": "not supplied",
     }
     overview_warning = result["warning"]

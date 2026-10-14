@@ -16,7 +16,7 @@ def utc_now() -> datetime:
 class Quote(BaseModel):
     """Market observation. Futures prices are points; binary prices are dollars."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, allow_inf_nan=False)
     instrument: str
     source: str
     source_timestamp: datetime | None = None
@@ -146,10 +146,23 @@ class AnalysisRequest(BaseModel):
     use price points, and binary prices use dollars.
     """
 
+    model_config = ConfigDict(allow_inf_nan=False)
+
     meeting: FOMCMeeting
     futures_quote: Quote
     kalshi_yes_quote: Quote
     current_effr_pct: float
+    pre_effective_effr_average_pct: float | None = None
+    pre_effective_rate_assumption: str = "flat reference rate"
+    reference_rate_date: date | None = None
+    selected_binary_side: str | None = None
+    selected_no_position: bool = False
+    selected_futures_contracts: int | None = None
+    user_distribution: list[float] | None = None
+    worst_loss_limit_dollars: float = Field(default=1000, ge=0)
+    futures_bid_depth: Decimal | None = Field(default=None, ge=0)
+    futures_ask_depth: Decimal | None = Field(default=None, ge=0)
+    kalshi_fee_rounding_dollars: Decimal = Field(default=Decimal("0.01"), gt=0)
     no_change_effr_pct: float | None = None
     kalshi_outcome_bp: int = 25
     kalshi_winning_states_bp: list[int] | None = None
@@ -175,7 +188,7 @@ class AnalysisRequest(BaseModel):
     arbitrage_tolerance_dollars: float = Field(default=1e-8, gt=0)
     capital_limit_dollars: float = Field(default=10_000, gt=0)
     max_kalshi_contracts: int = Field(default=1_000, gt=0)
-    max_futures_contracts: int = Field(default=10, ge=0)
+    max_futures_contracts: int = Field(default=10, ge=0, le=100)
     settlement_compatible: bool = False
     all_outcomes_modeled: bool = True
     multiple_meetings_in_contract: bool = False
@@ -192,6 +205,27 @@ class AnalysisRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_analysis(self) -> AnalysisRequest:
+        if not self.basis_scenarios_bp or len(self.basis_scenarios_bp) > 21:
+            raise ValueError("declare one to twenty-one basis stress scenarios")
+        if len(set(self.basis_scenarios_bp)) != len(self.basis_scenarios_bp):
+            raise ValueError("basis stress scenarios must be distinct")
+        if self.kalshi_winning_states_bp and len(set(self.kalshi_winning_states_bp)) != len(
+            self.kalshi_winning_states_bp
+        ):
+            raise ValueError("winning state set must contain distinct states")
+        if self.selected_binary_side not in {None, "yes", "no"}:
+            raise ValueError("selected binary side must be yes or no")
+        if self.user_distribution is not None:
+            import math
+
+            if (
+                len(self.user_distribution) != len(self.state_grid_bp)
+                or any(not math.isfinite(p) or p < 0 for p in self.user_distribution)
+                or abs(sum(self.user_distribution) - 1) > 1e-8
+            ):
+                raise ValueError("user distribution must be nonnegative and sum to one")
+        if len(self.state_grid_bp) < 2 or len(self.state_grid_bp) > 30:
+            raise ValueError("state grid must contain two to thirty states")
         if self.kalshi_outcome_bp not in self.state_grid_bp:
             raise ValueError("Kalshi outcome must be present in the modeled state grid")
         if self.kalshi_winning_states_bp is not None:

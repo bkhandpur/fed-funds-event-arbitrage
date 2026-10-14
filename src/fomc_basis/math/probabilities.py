@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import linprog, minimize
 from scipy.special import xlogy
 
 from ..models import ProbabilityResult
@@ -107,7 +107,7 @@ def regularized_distribution(
         raise ValueError("prior must be positive and match the state grid")
     prior_array /= prior_array.sum()
     bounds_map = state_bounds or {}
-    bounds = [bounds_map.get(int(state), (1e-12, 1.0)) for state in states]
+    bounds = [bounds_map.get(int(state), (0.0, 1.0)) for state in states]
     constraints = [
         {"type": "eq", "fun": lambda p: np.sum(p) - 1.0},
         {"type": "eq", "fun": lambda p: float(p @ states) - expected_move_bp},
@@ -116,9 +116,28 @@ def regularized_distribution(
     def kl(probabilities: np.ndarray) -> float:
         return float(np.sum(xlogy(probabilities, probabilities / prior_array)))
 
+    identified_bounds = probability_bounds(states_bp, expected_move_bp, state_bounds)
+    if all(high - low <= 1e-10 for low, high in identified_bounds.values()):
+        probabilities = np.array([identified_bounds[int(s)][0] for s in states])
+        return ProbabilityResult(
+            states_bp=states_bp,
+            probabilities=probabilities.tolist(),
+            bounds=identified_bounds,
+            prior=prior_array.tolist(),
+            status="optimal",
+            residuals={
+                "sum": float(probabilities.sum() - 1),
+                "expected_move_bp": float(probabilities @ states - expected_move_bp),
+            },
+            warnings=["Declared constraints identify a unique distribution"],
+        )
+    a_eq, b_eq = _constraints(states, expected_move_bp)
+    feasible = linprog(np.zeros(len(states)), A_eq=a_eq, b_eq=b_eq, bounds=bounds, method="highs")
+    if not feasible.success:
+        raise ValueError("probability constraints are infeasible")
     optimized = minimize(
         kl,
-        prior_array,
+        feasible.x,
         method="SLSQP",
         bounds=bounds,
         constraints=constraints,
@@ -130,7 +149,7 @@ def regularized_distribution(
     return ProbabilityResult(
         states_bp=states_bp,
         probabilities=probabilities.tolist(),
-        bounds=probability_bounds(states_bp, expected_move_bp, state_bounds),
+        bounds=identified_bounds,
         prior=prior_array.tolist(),
         status="optimal",
         residuals={

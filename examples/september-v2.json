@@ -730,12 +730,12 @@
           "entry_price_points": 96.26,
           "feasible": true,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
             ],
-            "combined_model_ev_dollars": 2.371428571411556,
+            "combined_model_ev_dollars": 2.3714285714115846,
             "combined_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
@@ -1304,7 +1304,7 @@
           "entry_price_points": 96.2625,
           "feasible": false,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
@@ -1314,7 +1314,7 @@
               -10.088727857153001,
               -10.088727857153001
             ],
-            "futures_gross_ev_dollars": -6.42015642856456,
+            "futures_gross_ev_dollars": -6.420156428564589,
             "total_costs_dollars": 9.74,
             "acquisition_cash_dollars": 449.74,
             "estimated_margin_dollars": 2000.0,
@@ -1878,7 +1878,7 @@
           "entry_price_points": 96.2625,
           "feasible": false,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
@@ -1888,7 +1888,7 @@
               -10.088727857153001,
               -10.088727857153001
             ],
-            "futures_gross_ev_dollars": -6.42015642856456,
+            "futures_gross_ev_dollars": -6.420156428564589,
             "total_costs_dollars": 9.74,
             "acquisition_cash_dollars": 449.74,
             "estimated_margin_dollars": 2000.0,
@@ -2452,17 +2452,17 @@
           "entry_price_points": 96.2625,
           "feasible": false,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
             ],
-            "combined_model_ev_dollars": -22.54888428571756,
+            "combined_model_ev_dollars": -22.54888428571758,
             "combined_feasible_ev_dollars": [
               -22.54888428571758,
               -22.54888428571758
             ],
-            "futures_gross_ev_dollars": -12.84031285712912,
+            "futures_gross_ev_dollars": -12.840312857129177,
             "total_costs_dollars": 15.780000000000001,
             "acquisition_cash_dollars": 455.78,
             "estimated_margin_dollars": 4000.0,
@@ -3026,7 +3026,7 @@
           "entry_price_points": 96.2625,
           "feasible": false,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
@@ -3036,7 +3036,7 @@
               -10.088727857153001,
               -10.088727857153001
             ],
-            "futures_gross_ev_dollars": -6.42015642856456,
+            "futures_gross_ev_dollars": -6.420156428564589,
             "total_costs_dollars": 9.74,
             "acquisition_cash_dollars": 449.74,
             "estimated_margin_dollars": 2000.0,
@@ -3600,12 +3600,12 @@
           "entry_price_points": 96.26,
           "feasible": true,
           "economics": {
-            "binary_model_ev_dollars": 2.371428571411556,
+            "binary_model_ev_dollars": 2.3714285714115846,
             "binary_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
             ],
-            "combined_model_ev_dollars": 2.371428571411556,
+            "combined_model_ev_dollars": 2.3714285714115846,
             "combined_feasible_ev_dollars": [
               2.371428571411587,
               2.371428571411587
@@ -4175,7 +4175,7 @@
         "entry_price_points": 96.2625,
         "feasible": false,
         "economics": {
-          "binary_model_ev_dollars": 2.371428571411556,
+          "binary_model_ev_dollars": 2.3714285714115846,
           "binary_feasible_ev_dollars": [
             2.371428571411587,
             2.371428571411587
@@ -4185,7 +4185,7 @@
             -10.088727857153001,
             -10.088727857153001
           ],
-          "futures_gross_ev_dollars": -6.42015642856456,
+          "futures_gross_ev_dollars": -6.420156428564589,
           "total_costs_dollars": 9.74,
           "acquisition_cash_dollars": 449.74,
           "estimated_margin_dollars": 2000.0,
@@ -4848,7 +4848,7 @@
       "market_distribution": [
         0.0,
         0.0,
-        0.08785714285717688,
+        0.08785714285717683,
         0.8921428571428232,
         0.02,
         0.0
@@ -4860,15 +4860,15 @@
       "sensitivities": [
         {
           "binary_price_dollars": 0.83,
-          "combined_ev_dollars": 13.671272142846998
+          "combined_ev_dollars": 13.67127214284697
         },
         {
           "binary_price_dollars": 0.88,
-          "combined_ev_dollars": -10.088727857153001
+          "combined_ev_dollars": -10.08872785715303
         },
         {
           "binary_price_dollars": 0.93,
-          "combined_ev_dollars": -33.668727857153
+          "combined_ev_dollars": -33.66872785715303
         }
       ],
       "futures_price_sensitivities": [
@@ -4876,7 +4876,7 @@
           "futures_reference_points": 96.25625000000001,
           "expected_move_bp": 24.37499999999915,
           "status": "feasible",
-          "combined_ev_dollars": 11.280314999989063,
+          "combined_ev_dollars": 11.280314999989066,
           "combined_feasible_ev_dollars": [
             11.280314999989066,
             11.280314999989066
@@ -5123,7 +5123,7 @@
       "selected_distribution": {
         "-50": 0.0,
         "-25": 0.0,
-        "0": 0.08785714285717688,
+        "0": 0.08785714285717683,
         "25": 0.8921428571428232,
         "50": 0.02,
         "75": 0.0
@@ -5168,7 +5168,7 @@
         "expected_move_bp": 0.0
       },
       "warnings": [
-        "Selected distribution is model-dependent; futures alone do not identify it.",
+        "Declared constraints identify a unique distribution",
         "User-specified tail constraints condition, but do not uniquely identify, the result."
       ],
       "kalshi_event_winning_states_bp": [
@@ -5193,8 +5193,9 @@
         "model_ev_order_dollars": 2.3714285714116,
         "conservative_ev_order_dollars": 2.3714285714116,
         "expected_return_on_cash": 0.005344666602234844,
-        "expected_return_on_total_capital": 0.0009704254087701437,
-        "estimated_total_capital_dollars": 2443.7,
+        "expected_return_on_total_capital": 0.005344666602234844,
+        "estimated_total_capital_dollars": 443.7,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.8874,
         "break_even_probability": 0.8874,
         "break_even_price_dollars": 0.8850166473093746,
@@ -5205,10 +5206,10 @@
           "10pct": 0.7801332236078238
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.8340093575659115,
-          "2pct": 0.7843602527334231,
-          "5pct": 0.6431137073257157,
-          "10pct": 0.43024064572561455
+          "1pct": 0.8756794536316692,
+          "2pct": 0.8665448593754181,
+          "5pct": 0.8402435994895525,
+          "10pct": 0.7998121111389934
         }
       },
       "no": {
@@ -5223,8 +5224,9 @@
         "model_ev_order_dollars": -15.031428571411576,
         "conservative_ev_order_dollars": -15.031428571411576,
         "expected_return_on_cash": -0.21797315213763888,
-        "expected_return_on_total_capital": -0.007265209850075195,
-        "estimated_total_capital_dollars": 2068.96,
+        "expected_return_on_total_capital": -0.21797315213763888,
+        "estimated_total_capital_dollars": 68.96,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.86208,
         "break_even_probability": 0.86208,
         "break_even_price_dollars": 0.10145847433742188,
@@ -5235,10 +5237,10 @@
           "10pct": 0.007330618371588496
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.06304507260050864,
-          "2pct": 0.025556747958537507,
-          "5pct": null,
-          "10pct": null
+          "1pct": 0.10045455915121358,
+          "2pct": 0.09946971560995019,
+          "5pct": 0.09661060999765261,
+          "10pct": 0.09218208180789782
         }
       }
     },
@@ -5255,8 +5257,9 @@
         "model_ev_order_dollars": 4.7414285714116,
         "conservative_ev_order_dollars": 4.7414285714116,
         "expected_return_on_cash": 0.010743499357423244,
-        "expected_return_on_total_capital": 0.0019421498000727472,
-        "estimated_total_capital_dollars": 2441.33,
+        "expected_return_on_total_capital": 0.010743499357423244,
+        "estimated_total_capital_dollars": 441.33,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.88266,
         "break_even_probability": 0.88266,
         "break_even_price_dollars": 0.8850166473093746,
@@ -5267,10 +5270,10 @@
           "10pct": 0.7801332236078238
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.8340093575659115,
-          "2pct": 0.7843602527334231,
-          "5pct": 0.6431137073257157,
-          "10pct": 0.43024064572561455
+          "1pct": 0.8756794536316692,
+          "2pct": 0.8665448593754181,
+          "5pct": 0.8402435994895525,
+          "10pct": 0.7998121111389934
         }
       },
       "no": {
@@ -5285,8 +5288,9 @@
         "model_ev_order_dollars": -12.401428571411575,
         "conservative_ev_order_dollars": -12.401428571411575,
         "expected_return_on_cash": -0.18696560487579642,
-        "expected_return_on_total_capital": -0.006001668935461216,
-        "estimated_total_capital_dollars": 2066.33,
+        "expected_return_on_total_capital": -0.18696560487579642,
+        "estimated_total_capital_dollars": 66.33,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.86734,
         "break_even_probability": 0.86734,
         "break_even_price_dollars": 0.10145847433742188,
@@ -5297,10 +5301,10 @@
           "10pct": 0.007330618371588496
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.06304507260050864,
-          "2pct": 0.025556747958537507,
-          "5pct": null,
-          "10pct": null
+          "1pct": 0.10045455915121358,
+          "2pct": 0.09946971560995019,
+          "5pct": 0.09661060999765261,
+          "10pct": 0.09218208180789782
         }
       }
     },
@@ -5916,19 +5920,19 @@
         "UNSYNCHRONIZED_QUOTES"
       ],
       "risk_flags": [
-        "FUTURES_BID_ASK_SPREAD",
-        "INTEGER_HEDGE_RESIDUAL",
-        "STALE_QUOTE",
-        "CANNOT_EXECUTE_VENUES_ATOMICALLY",
-        "EFFR_TARGET_BASIS_RISK",
+        "UNMODELED_OR_TAIL_OUTCOME_RISK",
         "TRANSACTION_COSTS",
-        "SETTLEMENT_DEFINITION_MISMATCH",
+        "FUTURES_BID_ASK_SPREAD",
         "INSUFFICIENT_DEPTH",
-        "MISSING_BOOK_SIDE",
-        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
+        "SETTLEMENT_DEFINITION_MISMATCH",
         "KALSHI_BID_ASK_SPREAD",
+        "INTEGER_HEDGE_RESIDUAL",
+        "EFFR_TARGET_BASIS_RISK",
         "MODEL_UNDERIDENTIFIED",
-        "UNMODELED_OR_TAIL_OUTCOME_RISK"
+        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
+        "STALE_QUOTE",
+        "MISSING_BOOK_SIDE",
+        "CANNOT_EXECUTE_VENUES_ATOMICALLY"
       ],
       "worst_case_pnl_dollars": -1497.74050000003,
       "expected_value_dollars": -10.088727857153001

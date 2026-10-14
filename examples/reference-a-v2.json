@@ -2236,8 +2236,9 @@
         "model_ev_order_dollars": 1.26,
         "conservative_ev_order_dollars": 1.26,
         "expected_return_on_cash": 0.005065530272573772,
-        "expected_return_on_total_capital": 0.0005603137757144002,
-        "estimated_total_capital_dollars": 2248.74,
+        "expected_return_on_total_capital": 0.005065530272573772,
+        "estimated_total_capital_dollars": 248.74,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.49748,
         "break_even_probability": 0.49748,
         "break_even_price_dollars": 0.4825213851384236,
@@ -2248,10 +2249,10 @@
           "10pct": 0.38343118028114526
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.43820728378441104,
-          "2pct": 0.39503129010400606,
-          "5pct": 0.271843865519089,
-          "10pct": 0.0854307371585058
+          "1pct": 0.47757520101267353,
+          "2pct": 0.47273204788487866,
+          "5pct": 0.4587988275627145,
+          "10pct": 0.4373150581355584
         }
       },
       "no": {
@@ -2266,8 +2267,9 @@
         "model_ev_order_dollars": -23.720000000000002,
         "conservative_ev_order_dollars": -23.720000000000002,
         "expected_return_on_cash": -0.08665789858249306,
-        "expected_return_on_total_capital": -0.010432243196171913,
-        "estimated_total_capital_dollars": 2273.7200000000003,
+        "expected_return_on_total_capital": -0.08665789858249306,
+        "estimated_total_capital_dollars": 273.72,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.45255999999999996,
         "break_even_probability": 0.45255999999999996,
         "break_even_price_dollars": 0.4825213851384236,
@@ -2278,10 +2280,10 @@
           "10pct": 0.38343118028114526
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.43820728378441104,
-          "2pct": 0.39503129010400606,
-          "5pct": 0.271843865519089,
-          "10pct": 0.0854307371585058
+          "1pct": 0.47757520101267353,
+          "2pct": 0.47273204788487866,
+          "5pct": 0.4587988275627145,
+          "10pct": 0.4373150581355584
         }
       }
     },
@@ -2298,8 +2300,9 @@
         "model_ev_order_dollars": 3.77,
         "conservative_ev_order_dollars": 3.77,
         "expected_return_on_cash": 0.015310888193964993,
-        "expected_return_on_total_capital": 0.0016783677539699852,
-        "estimated_total_capital_dollars": 2246.23,
+        "expected_return_on_total_capital": 0.015310888193964993,
+        "estimated_total_capital_dollars": 246.23,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.49246,
         "break_even_probability": 0.49246,
         "break_even_price_dollars": 0.4825213851384236,
@@ -2310,10 +2313,10 @@
           "10pct": 0.38343118028114526
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.43820728378441104,
-          "2pct": 0.39503129010400606,
-          "5pct": 0.271843865519089,
-          "10pct": 0.0854307371585058
+          "1pct": 0.47757520101267353,
+          "2pct": 0.47273204788487866,
+          "5pct": 0.4587988275627145,
+          "10pct": 0.4373150581355584
         }
       },
       "no": {
@@ -2328,8 +2331,9 @@
         "model_ev_order_dollars": -21.23,
         "conservative_ev_order_dollars": -21.23,
         "expected_return_on_cash": -0.0782730523909597,
-        "expected_return_on_total_capital": -0.009347358039476407,
-        "estimated_total_capital_dollars": 2271.23,
+        "expected_return_on_total_capital": -0.0782730523909597,
+        "estimated_total_capital_dollars": 271.23,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": 0.45753999999999995,
         "break_even_probability": 0.45753999999999995,
         "break_even_price_dollars": 0.4825213851384236,
@@ -2340,10 +2344,10 @@
           "10pct": 0.38343118028114526
         },
         "return_on_capital_hurdle_prices": {
-          "1pct": 0.43820728378441104,
-          "2pct": 0.39503129010400606,
-          "5pct": 0.271843865519089,
-          "10pct": 0.0854307371585058
+          "1pct": 0.47757520101267353,
+          "2pct": 0.47273204788487866,
+          "5pct": 0.4587988275627145,
+          "10pct": 0.4373150581355584
         }
       }
     },
@@ -2600,17 +2604,17 @@
         "UNSYNCHRONIZED_QUOTES"
       ],
       "risk_flags": [
-        "FUTURES_BID_ASK_SPREAD",
-        "INTEGER_HEDGE_RESIDUAL",
-        "STALE_QUOTE",
-        "CANNOT_EXECUTE_VENUES_ATOMICALLY",
-        "EFFR_TARGET_BASIS_RISK",
         "TRANSACTION_COSTS",
-        "SETTLEMENT_DEFINITION_MISMATCH",
+        "FUTURES_BID_ASK_SPREAD",
         "INSUFFICIENT_DEPTH",
-        "MISSING_BOOK_SIDE",
         "KALSHI_BID_ASK_SPREAD",
-        "WEEKEND_OR_HOLIDAY_RATE_CARRY"
+        "SETTLEMENT_DEFINITION_MISMATCH",
+        "INTEGER_HEDGE_RESIDUAL",
+        "EFFR_TARGET_BASIS_RISK",
+        "WEEKEND_OR_HOLIDAY_RATE_CARRY",
+        "STALE_QUOTE",
+        "MISSING_BOOK_SIDE",
+        "CANNOT_EXECUTE_VENUES_ATOMICALLY"
       ],
       "worst_case_pnl_dollars": -67.30500000001187,
       "expected_value_dollars": -15.197499999990534

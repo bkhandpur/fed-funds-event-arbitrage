@@ -20,7 +20,6 @@ from ..math.fed_funds import (
     expected_post_meeting_effr_pct,
     quote_probability_sensitivity,
 )
-from ..math.hedge import integer_hedges
 from ..math.probabilities import (
     probability_bounds,
     regularized_distribution,
@@ -206,6 +205,7 @@ def _ev_summary(
             model_order_ev / total_capital if total_capital > 0 else None
         ),
         "estimated_total_capital_dollars": total_capital,
+        "return_denominator": "Binary acquisition cash including entry costs",
         "break_even_outcome_probability": break_even_probability(
             price, fee_per_contract, slippage, side=side
         ),
@@ -292,18 +292,9 @@ def analyze_request(request: AnalysisRequest) -> dict[str, Any]:
         effective_date=request.kalshi_fee_schedule_effective_date,
         rounding_dollars=request.kalshi_fee_rounding_dollars,
     )
-    if request.kalshi_outcome_bp == 0:
-        estimated_futures_contracts = 0
-    else:
-        estimated_futures_contracts = abs(
-            integer_hedges(
-                request.kalshi_contracts,
-                day_count.days_in_month,
-                day_count.post_decision_days,
-                abs(request.kalshi_outcome_bp),
-            )["nearest"].futures_contracts
-        )
-    estimated_margin = estimated_futures_contracts * request.futures_margin_per_contract_dollars
+    # These summaries describe the binary leg only. Combined cash and margin
+    # are computed from actual selected whole-contract candidates below.
+    estimated_margin = 0.0
     yes_price, no_price, binary_executable = _binary_prices(request)
     yes_ev = _ev_summary(
         outcome_probability,

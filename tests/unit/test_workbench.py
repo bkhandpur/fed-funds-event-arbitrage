@@ -268,3 +268,22 @@ def test_separate_pre_average_and_post_basis():
     assert w["expected_move_bp"] == pytest.approx(11.5, abs=1e-8)
     assert w["conventions"]["pre_effective_average_pct"] == 3.4
     assert w["conventions"]["no_change_post_effr_pct"] == 3.6
+
+
+def test_binary_return_denominator_excludes_hypothetical_futures_margin():
+    result = analyze_request(changed(selected_futures_contracts=3))
+    binary = result["expected_value"]["yes"]
+    assert binary["estimated_total_capital_dollars"] == pytest.approx(248.74)
+    assert binary["expected_return_on_total_capital"] == pytest.approx(1.26 / 248.74)
+    assert result["workbench"]["selected"]["economics"][
+        "estimated_cash_and_margin_dollars"
+    ] == pytest.approx(248.74 + 3 * (2000 + 6.04))
+
+
+@pytest.mark.parametrize("mean,expected", [(0, [1, 0, 0]), (50, [0, 0, 1])])
+def test_identified_boundary_probability_mass(mean, expected):
+    from fomc_basis.math.probabilities import regularized_distribution
+
+    result = regularized_distribution([0, 25, 50], mean, [1, 1, 1])
+    assert result.probabilities == pytest.approx(expected, abs=1e-10)
+    assert result.residuals["sum"] == pytest.approx(0, abs=1e-10)

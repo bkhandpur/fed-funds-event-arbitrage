@@ -36,7 +36,14 @@ test("reference arithmetic, changed costs, signed chart, comparison and exports"
   await page.getByRole("button", { name: "Clone to manual" }).click();
   await page.getByLabel("Binary entry slippage dollars", { exact: true }).fill(".01");
   await expect(page.getByText("Draft changed · displayed result is stale")).toBeVisible();
-  await page.getByRole("button", { name: "Run scenario", exact: true }).click();
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (r) => r.url().includes("/api/analyze") && r.request().method() === "POST",
+      { timeout: 20000 },
+    ),
+    page.getByRole("button", { name: "Run scenario", exact: true }).click(),
+  ]);
+  expect((await response.json()).ok).toBe(true);
   await expect(
     page.locator(".wb-metric").filter({ hasText: "Combined net model EV" }),
   ).toContainText("-$20.198");

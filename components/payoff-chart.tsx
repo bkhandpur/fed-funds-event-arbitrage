@@ -17,7 +17,14 @@ export function PayoffChart({ rows, unhedged }: { rows: Ledger[]; unhedged: Ledg
   );
   const y = (v: number) => 130 - (v / max) * 100;
   return (
-    <figure className="wb-chart">
+    <figure
+      className="wb-chart"
+      role="region"
+      aria-label="Signed payoff states"
+      // Focus enables native keyboard scrolling of the policy-state chart.
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+    >
       <figcaption>Signed state payoff in dollars</figcaption>
       <svg
         viewBox={`0 0 ${Math.max(480, rows.length * 100 + 80)} 270`}

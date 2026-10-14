@@ -115,6 +115,10 @@ export function Workspace() {
   }, []);
   const stale = JSON.stringify(draft) !== JSON.stringify(analysis.inputs);
   const wb = analysis.workbench;
+  const marketResidual = (
+    analysis.probability_model as
+      { constraint_residuals?: { expected_move_bp?: number } } | undefined
+  )?.constraint_residuals?.expected_move_bp;
   const ec = candidate.economics;
   const plot = candidate.stress.filter((r) => r.basis_change_bp === basis);
   const rows = plot.length ? plot : candidate.ledger;
@@ -937,6 +941,11 @@ export function Workspace() {
                 Market masses {wb.market_distribution.map((p) => pct(p)).join(" · ")} · sum{" "}
                 {wb.market_distribution.reduce((a, b) => a + b, 0).toFixed(6)}
               </p>
+              <p className="wb-note">
+                Market moment residual{" "}
+                {marketResidual === undefined ? "Unavailable" : marketResidual.toExponential(2)} bp
+              </p>
+              {error && <p className="wb-loss">{error}</p>}
               {draft.user_distribution && (
                 <p>User sum {draft.user_distribution.reduce((a, b) => a + b, 0).toFixed(6)}</p>
               )}
